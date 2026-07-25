@@ -7,6 +7,7 @@ let currentScanId = '';
 const urlInput = document.getElementById("urlInput");
 const submitBtn = document.getElementById("submitBtn");
 const output = document.getElementById("errorText");
+const errorMsg = document.getElementById("errorMsg");
 const clearInputBtn = document.getElementById("clearInputBtn");
 const spinner = document.getElementById("btnIcon");
 const btnText = document.getElementById("btnText");
@@ -79,7 +80,14 @@ analysisForm.addEventListener('submit', async (e) => {
         document.getElementById("scanTime").textContent = `${duration}s`;
 
     } catch (error) {
-        showError("An error occurred while processing your request.");
+        console.error("Scan error:", error);
+        let msg = "An error occurred while processing your request.";
+
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            msg = "Network Error: Could not connect to the backend server. Is it running?";
+        }
+
+        showError(msg);
         clearAll()
     } finally {
         setLoading(false);
