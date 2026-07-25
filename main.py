@@ -4,9 +4,9 @@ import json
 from urllib.parse import urlparse
 
 # Import your existing modules
-from src.requester import fetch_headers
-from src.analyzer import analyze_headers
-from src.reporter import print_report
+from src.argus.requester import fetch_headers
+from src.argus.analyzer import analyze_headers
+from src.argus.reporter import print_report
 
 
 def save_json_report(response_data, findings, target_url):

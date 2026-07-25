@@ -4,9 +4,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import internal modules
-from src.requester import fetch_headers
-from src.analyzer import analyze_headers
-from src.schemas import AnalyzeRequest
+from src.argus.requester import fetch_headers
+from src.argus.analyzer import analyze_headers
+from src.argus.schemas import AnalyzeRequest
 
 
 # Create FastAPI app
