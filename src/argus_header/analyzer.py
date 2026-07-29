@@ -97,7 +97,3 @@ def analyze_headers(headers_data):
         })
 
     return findings
-
-
-
-# print(analyze_headers({'success': True, 'url': 'https://example.com/', 'status_code': 200, 'headers': {'Accept-Ranges': 'bytes', 'Content-Type': 'text/html', 'ETag': '"bc2473a18e003bdb249eba5ce893033f:1760028122.592274"', 'Last-Modified': 'Thu, 09 Oct 2025 16:42:02 GMT', 'Vary': 'Accept-Encoding', 'Content-Encoding': 'gzip', 'Content-Length': '363', 'Cache-Control': 'max-age=86000', 'Date': 'Tue, 09 Dec 2025 14:19:11 GMT', 'Connection': 'keep-alive', 'Alt-Svc': 'h3=":443"; ma=93600'}, 'http_version': 11}))
