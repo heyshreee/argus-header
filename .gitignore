@@ -1,15 +1,25 @@
+# Python
 __pycache__/
-*.pyc
-.env
-.vscode/
-.DS_Store
-venv/
-.venv/
-__pycache__/
-.pytest_cache/
-report/
-dist/
-build/
+*.py[cod]
 *.egg-info/
-__pycache__/
-*.pyc
+
+# Build artifacts
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+.env
+
+# Testing
+.pytest_cache/
+
+# IDEs
+.vscode/
+
+# Reports
+report/
+
+# OS files
+.DS_Store
