@@ -1,137 +1,350 @@
-# HTTP Header Analyzer
+# 🛡️ Argus Header
 
-A Python-based CLI tool to analyze HTTP headers for security vulnerabilities, information leakage, and configuration issues.
+> Fast, lightweight HTTP security header analyzer built for developers, security engineers, and penetration testers.
 
-![HTTP Header Analyzer Output](assets/image.png)
-A screenshot demonstrating the CLI tool's output.
+![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.5.0-orange.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+Argus Header is a command-line tool that analyzes HTTP response headers and identifies common security misconfigurations, information leakage, and header-related best practice issues.
 
-## Features
+---
 
-- **Security Analysis**: Checks for missing or misconfigured security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options).
-- **Information Leakage**: Detects leaked server versions and technology stacks (Server, X-Powered-By).
-- **CORS Validation**: Identifies dangerous CORS configurations (Access-Control-Allow-Origin).
-- **Performance**: Checks for caching headers (Cache-Control).
-- **Parallel Scanning**: Scan multiple URLs concurrently for faster results.
-- **JSON Export**: Save analysis reports to a JSON file for further processing.
-- **Rich Output**: Beautiful, readable terminal output using the `rich` library.
-- **Web Interface**: A modern, responsive web interface for easy analysis.
+## ✨ Features
 
-![Web Interface](assets/frontend-image.png)
+### HTTP Request Engine
 
-## Installation
+- GET and HEAD request support
+- Configurable request timeout
+- Redirect support
+- Retry mechanism for temporary failures
+- Multiple URL scanning
+- Parallel scanning
 
-1. Clone the repository.
-2. Navigate to the project directory.
-3. Install the required dependencies:
+### Security Analysis
 
-   ```bash
-   pip install -r venv/requirements.txt
-   ```
+Detects missing security headers including:
 
-   _(Note: Adjust the path to `requirements.txt` if necessary)_
+- Content-Security-Policy (CSP)
+- Strict-Transport-Security (HSTS)
+- X-Frame-Options
+- X-Content-Type-Options
 
-## Usage
+### Information Disclosure Detection
 
-Run the analyzer from the command line using `src/cli.py`.
+Checks for exposed:
+
+- Server
+- X-Powered-By
+
+### CORS Analysis
+
+Detects:
+
+- Access-Control-Allow-Origin: *
+
+### Performance Checks
+
+Checks:
+
+- Cache-Control
+
+### Reports
+
+- Beautiful Rich CLI output
+- JSON report export
+- Severity levels
+- Recommendations
+
+---
+
+# Installation
+
+## From Source
 
 ```bash
-python -m main <URL> [OPTIONS]
+git clone https://github.com/heyshreee/argus-header.git
+
+cd argus-header
+
+python -m venv .venv
+
+source .venv/bin/activate
 ```
 
-### Options
+Windows
 
-- `url`: One or more target URLs to scan.
-- `--method`: HTTP method to use (`GET` or `HEAD`). Default: `GET`.
-- `--no-redirect`: Do not follow HTTP redirects.
-- `--timeout`: Request timeout in seconds. Default: `10`.
-- `--json <file>`: Save the report to a JSON file (Single URL only).
-- `--parallel`: Enable parallel scanning when multiple URLs are provided.
-
-### Examples
-
-**Basic Scan:**
-
-```bash
-python -m main https://example.com
+```powershell
+.venv\Scripts\activate
 ```
 
-**Scan Multiple URLs in Parallel:**
+Install
 
 ```bash
-python -m main https://example.com https://google.com --parallel
+pip install -e .
 ```
 
-**Save Report to JSON:**
+---
+
+## Verify Installation
 
 ```bash
-python -m main https://example.com --json report.json
+argus-header --version
 ```
 
-## Web Interface
+Expected output
 
-The project includes a modern web interface for easier analysis.
-
-### Running the Web Interface
-
-1. **Start the Backend API:**
-
-   Make sure you have installed the dependencies.
-
-   ```bash
-   uvicorn api:app --reload
-   ```
-
-   The API will start at `http://127.0.0.1:8000`.
-
-2. **Open the Frontend:**
-
-   Open the `frontend/index.html` file in your web browser. You can simply drag and drop the file into a browser tab or use a local server (e.g., Live Server in VS Code).
-
-   _Note: The frontend communicates with the backend at `http://127.0.0.1:8000`._
-
-## Project Structure
-
-- `src/cli.py`: Main entry point for the CLI.
-- `src/analyzer.py`: Core logic for analyzing HTTP headers.
-- `src/requester.py`: Handles HTTP requests and retries.
-- `src/reporter.py`: Generates CLI and JSON reports.
-- `src/utils.py`: Helper functions (e.g., URL normalization).
-- `tests/`: Unit tests for the application.
-- `main.py ` : main file to execute the all.
-
-## Dependencies
-
-```bash
-pip install -r requirements.txt
+```text
+argus-header 0.5.0
 ```
 
-- `requests`: For making HTTP requests.
-- `urllib3`: For retry logic.
-- `rich`: For pretty terminal output.
+---
 
------
-## 2. DOCKER
- 
-```bash
-FROM python:3.9-slim-buster
+# Usage
 
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-ENTRYPOINT ["python", "main.py"]
-
-````
+Basic scan
 
 ```bash
-# Build the Docker image
-docker build -t header-analyzer .
+argus-header https://example.com
+```
 
-# Run the analyzer with an example URL and mount a volume for reports
-docker run -v "$(pwd)/report:/app/report" header-analyzer https://example.com --json /app/report/example_report.json
+HEAD request
 
-````
+```bash
+argus-header https://example.com --method HEAD
+```
+
+Custom timeout
+
+```bash
+argus-header https://example.com --timeout 5
+```
+
+Multiple URLs
+
+```bash
+argus-header https://google.com https://github.com --parallel
+```
+
+Disable redirects
+
+```bash
+argus-header https://example.com --no-redirect
+```
+
+Export JSON
+
+```bash
+argus-header https://example.com --json report.json
+```
+
+Help
+
+```bash
+argus-header --help
+```
+
+---
+
+# Command Line Options
+
+| Option | Description |
+|---------|-------------|
+| --method | HTTP Method (GET / HEAD) |
+| --timeout | Request timeout |
+| --parallel | Scan multiple URLs concurrently |
+| --json FILE | Save report as JSON |
+| --no-redirect | Disable redirect following |
+| --verbose | Verbose output |
+| --version | Display version |
+| --help | Show help |
+
+---
+
+# Example Output
+
+```text
+Target
+https://example.com
+
+Status
+200
+
+Headers Found
+18
+
+HIGH
+Missing Content-Security-Policy
+
+HIGH
+Missing Strict-Transport-Security
+
+MEDIUM
+X-Powered-By Header Exposed
+
+LOW
+Missing Cache-Control
+```
+
+---
+
+# Project Structure
+
+```
+argus-header/
+
+src/
+└── argus_header/
+    ├── __init__.py
+    ├── cli.py
+    ├── requester.py
+    ├── analyzer.py
+    ├── reporter.py
+    └── utils.py
+
+tests/
+
+README.md
+LICENSE
+pyproject.toml
+```
+
+---
+
+# Current Checks
+
+## Security Headers
+
+- Content-Security-Policy
+- Strict-Transport-Security
+- X-Frame-Options
+- X-Content-Type-Options
+
+## Information Leakage
+
+- Server
+- X-Powered-By
+
+## CORS
+
+- Wildcard Access-Control-Allow-Origin
+
+## Performance
+
+- Cache-Control
+
+---
+
+# Roadmap
+
+## v0.6.0
+
+- Security score
+- Grade (A–F)
+- Cookie analysis
+- CSP validation
+- HSTS validation
+
+## v0.7.0
+
+- HTML reports
+- Markdown reports
+- Response time
+- Redirect chain
+- HTTP version display
+
+## v0.8.0
+
+- Unit tests
+- GitHub Actions
+- Documentation improvements
+- Better architecture
+
+## v0.9.0
+
+- TLS inspection
+- Certificate analysis
+- HTTP/2 detection
+- Advanced CORS analysis
+
+## v1.0.0
+
+- Stable public release
+- Complete security analysis
+- Production-ready documentation
+- Comprehensive testing
+
+---
+
+# Development
+
+Clone
+
+```bash
+git clone https://github.com/heyshreee/argus-header.git
+```
+
+Install development version
+
+```bash
+pip install -e .
+```
+
+Run
+
+```bash
+argus-header https://example.com
+```
+
+---
+
+# Contributing
+
+Contributions are welcome.
+
+1. Fork the repository
+2. Create a feature branch
+
+```bash
+git checkout -b feature/my-feature
+```
+
+3. Commit
+
+```bash
+git commit -m "feat: add awesome feature"
+```
+
+4. Push
+
+```bash
+git push origin feature/my-feature
+```
+
+5. Open a Pull Request
+
+---
+
+# License
+
+Released under the MIT License.
+
+See LICENSE for details.
+
+---
+
+# Author
+
+**Sriram**
+
+GitHub
+
+https://github.com/heyshreee
+
+---
+
+## Disclaimer
+
+Argus Header is intended for defensive security, security auditing, learning, and authorized penetration testing only.
+
+Only scan systems that you own or have explicit permission to assess.
