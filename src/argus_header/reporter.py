@@ -6,7 +6,7 @@ from rich.text import Text
 
 console = Console()
 
-def print_report(response_data, findings):
+def print_report(response_data, findings, verbose=False):
     """Prints a pretty CLI report."""
     
     # 1. Status Section
@@ -49,7 +49,10 @@ def print_report(response_data, findings):
         console.print("[bold green]No significant issues found![/bold green]")
 
     # 3. Raw Headers (Optional or summarized)
-    console.print("\n[dim]Run with --verbose to see full header dump (not implemented in basic guide).[/dim]")
+    if not verbose:
+        console.print(
+            "\n[dim]Tip: Run with --verbose to view detailed scan information.[/dim]"
+        )
 
 
 def save_json(response_data, findings, filepath):

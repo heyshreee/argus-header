@@ -8,6 +8,7 @@ from argus_header import __version__
 from .requester import fetch_headers
 from .analyzer import analyze_headers
 from .reporter import print_report, save_json
+from .verbose import print_verbose
 
 console = Console()
 
@@ -35,7 +36,11 @@ def scan_target(url: str, args):
     )
 
     findings = analyze_headers(response_data)
-    print_report(response_data, findings)
+    print_report(response_data, findings, verbose=args.verbose)
+
+    if args.verbose:
+        print_verbose(url, response_data, findings, args)
+
 
     if args.json and len(args.url) == 1:
         save_json(response_data, findings, args.json)
@@ -103,7 +108,7 @@ Examples:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Reserved for future verbose output.",
+        help="Show detailed scan information."
     )
 
     args = parser.parse_args()
