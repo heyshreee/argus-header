@@ -237,42 +237,22 @@ pyproject.toml
 
 # Roadmap
 
-## v0.6.0
+## v0.5.0 — Current Release
 
-- Security score
-- Grade (A–F)
-- Cookie analysis
-- CSP validation
-- HSTS validation
+### Core Features
 
-## v0.7.0
-
-- HTML reports
-- Markdown reports
-- Response time
-- Redirect chain
-- HTTP version display
-
-## v0.8.0
-
-- Unit tests
-- GitHub Actions
-- Documentation improvements
-- Better architecture
-
-## v0.9.0
-
-- TLS inspection
-- Certificate analysis
-- HTTP/2 detection
-- Advanced CORS analysis
-
-## v1.0.0
-
-- Stable public release
-- Complete security analysis
-- Production-ready documentation
-- Comprehensive testing
+* HTTP GET & HEAD request support
+* Configurable request timeout
+* Redirect handling
+* Retry mechanism
+* Parallel URL scanning
+* Rich CLI output
+* JSON report export
+* Security header detection
+* Information leakage detection
+* CORS wildcard analysis
+* Cache-Control analysis
+* PyPI-ready packaging
 
 ---
 

@@ -1,7 +1,2 @@
 requests
-urllib3
 rich
-flask
-uvicorn
-fastapi
-pydantic
