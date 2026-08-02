@@ -3,25 +3,25 @@
 > Fast, lightweight HTTP security header analyzer built for developers, security engineers, and penetration testers.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
-![Version](https://img.shields.io/badge/version-v0.5.0-orange.svg)
+![Version](https://img.shields.io/badge/version-v0.6.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-Argus Header is a command-line tool that analyzes HTTP response headers and identifies common security misconfigurations, information leakage, and header-related best practice issues.
+Argus Header is a command-line tool that analyzes HTTP response headers and identifies common security misconfigurations, information leakage, and HTTP security best-practice issues. It provides both a concise summary and a detailed verbose report for security assessments.
 
 ---
 
-## ✨ Features
+# ✨ Features
 
-### HTTP Request Engine
+## HTTP Request Engine
 
-- GET and HEAD request support
-- Configurable request timeout
-- Redirect support
-- Retry mechanism for temporary failures
-- Multiple URL scanning
-- Parallel scanning
+- ✅ GET & HEAD request support
+- ✅ Configurable request timeout
+- ✅ Redirect handling
+- ✅ Retry mechanism
+- ✅ Multiple URL scanning
+- ✅ Parallel scanning
 
-### Security Analysis
+## Security Analysis
 
 Detects missing security headers including:
 
@@ -30,37 +30,80 @@ Detects missing security headers including:
 - X-Frame-Options
 - X-Content-Type-Options
 
-### Information Disclosure Detection
+## Information Leakage Detection
 
-Checks for exposed:
+Detects exposed:
 
 - Server
 - X-Powered-By
 
-### CORS Analysis
+## CORS Analysis
 
 Detects:
 
-- Access-Control-Allow-Origin: *
+- Wildcard `Access-Control-Allow-Origin: *`
 
-### Performance Checks
+## Performance Checks
 
-Checks:
+Analyzes:
 
 - Cache-Control
 
-### Reports
+## Reports
 
-- Beautiful Rich CLI output
+- Rich CLI output
+- Detailed `--verbose` mode
 - JSON report export
 - Severity levels
-- Recommendations
+- Security recommendations
 
 ---
 
-# Installation
+# 🔍 Verbose Mode
 
-## From Source
+The `--verbose` option provides a comprehensive scan report including:
+
+- Scan Information
+- Target Information
+- Request Configuration
+- Connection Information
+- HTTP Response Details
+- Redirect Information
+- Response Headers
+- Security Headers
+- Missing Security Headers
+- Present Security Headers
+- Information Leakage
+- Response Statistics
+- Findings Summary
+- Overall Assessment
+- End of Scan Summary
+
+---
+
+# 📦 Installation
+
+## Install from PyPI
+
+```bash
+pip install argus-header
+```
+
+Verify installation:
+
+```bash
+argus-header --version
+```
+
+Expected output:
+
+```text
+Argus Header 0.6.0
+```
+
+---
+
+## Install from Source
 
 ```bash
 git clone https://github.com/heyshreee/argus-header.git
@@ -68,17 +111,21 @@ git clone https://github.com/heyshreee/argus-header.git
 cd argus-header
 
 python -m venv .venv
-
-source .venv/bin/activate
 ```
 
-Windows
+### Windows
 
 ```powershell
 .venv\Scripts\activate
 ```
 
-Install
+### Linux / macOS
+
+```bash
+source .venv/bin/activate
+```
+
+Install:
 
 ```bash
 pip install -e .
@@ -86,35 +133,27 @@ pip install -e .
 
 ---
 
-## Verify Installation
+# 🚀 Usage
 
-```bash
-argus-header --version
-```
-
-Expected output
-
-```text
-argus-header 0.5.0
-```
-
----
-
-# Usage
-
-Basic scan
+Basic Scan
 
 ```bash
 argus-header https://example.com
 ```
 
-HEAD request
+HEAD Request
 
 ```bash
 argus-header https://example.com --method HEAD
 ```
 
-Custom timeout
+Verbose Report
+
+```bash
+argus-header https://example.com --verbose
+```
+
+Custom Timeout
 
 ```bash
 argus-header https://example.com --timeout 5
@@ -126,7 +165,7 @@ Multiple URLs
 argus-header https://google.com https://github.com --parallel
 ```
 
-Disable redirects
+Disable Redirects
 
 ```bash
 argus-header https://example.com --no-redirect
@@ -138,7 +177,13 @@ Export JSON
 argus-header https://example.com --json report.json
 ```
 
-Help
+Display Version
+
+```bash
+argus-header --version
+```
+
+Display Help
 
 ```bash
 argus-header --help
@@ -146,74 +191,71 @@ argus-header --help
 
 ---
 
-# Command Line Options
+# ⚙️ Command Line Options
 
 | Option | Description |
 |---------|-------------|
-| --method | HTTP Method (GET / HEAD) |
-| --timeout | Request timeout |
-| --parallel | Scan multiple URLs concurrently |
-| --json FILE | Save report as JSON |
-| --no-redirect | Disable redirect following |
-| --verbose | Verbose output |
-| --version | Display version |
-| --help | Show help |
+| `--method` | HTTP Method (GET / HEAD) |
+| `--timeout` | Request timeout |
+| `--parallel` | Scan multiple URLs concurrently |
+| `--json FILE` | Save report as JSON |
+| `--no-redirect` | Disable redirect following |
+| `--verbose` | Display detailed scan report |
+| `--version` | Display tool version |
+| `--help` | Show help information |
 
 ---
 
-# Example Output
+# 📋 Example Output
 
-```text
-Target
-https://example.com
+```code
+(.venv) PS C:\pr0j3t\argus-header> argus-header https://example.com --verbose         
 
-Status
-200
+   ___                             
+  / _ | _______ _____ _____ _____  
+ / __ |/ __/ _ `/ // (_-</(_-<(_-<  
+/_/ |_/_/  \_, /\_,_/___/___/___/  
+            /_/                    
 
-Headers Found
-18
+ Argus Header
+ HTTP Header Security Analyzer
 
-HIGH
-Missing Content-Security-Policy
+Version: 0.6.0
 
-HIGH
-Missing Strict-Transport-Security
+╭──────── Scan Summary ────────╮
+│ Target: https://example.com/ │
+│ Status: 200                  │
+│ Headers Found: 11            │
+╰──────────────────────────────╯
+                                                    Analysis Findings                                                     
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Severity     ┃ Issue                            ┃ Risk                              ┃ Recommendation                   ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ HIGH         │ Missing Content-Security-Policy  │ XSS (Cross-Site Scripting)        │ Add a 'Content-Security-Policy'  │
+│              │                                  │ attacks are easier to exploit.    │ header defining allowed content  │
+│              │                                  │                                   │ sources.                         │
+│ HIGH         │ Missing                          │ Susceptible to Man-in-the-Middle  │ Add 'Strict-Transport-Security:  │
+│              │ Strict-Transport-Security        │ (MITM) protocol downgrade         │ max-age=63072000;                │
+│              │                                  │ attacks.                          │ includeSubDomains'.              │
+│ HIGH         │ Missing X-Frame-Options          │ Vulnerable to Clickjacking        │ Add 'X-Frame-Options: DENY' or   │
+│              │                                  │ attacks.                          │ 'SAMEORIGIN'.                    │
+│ MEDIUM       │ Missing X-Content-Type-Options   │ Browsers may MIME-sniff the       │ Add 'X-Content-Type-Options:     │
+│              │                                  │ response body, leading to XSS.    │ nosniff'.                        │
+│ LOW          │ Server Header Leaked: cloudflare │ Reveals server technology,        │ Configure server to suppress or  │
+│              │                                  │ helping attackers verify CVEs.    │ obfuscate the 'Server' header.   │
+│ LOW          │ Missing Cache-Control Header     │ Browser may not cache resources   │ Add 'Cache-Control' header       │
+│              │                                  │ efficiently, slowing load times.  │ (e.g., max-age=3600).            │
+└──────────────┴──────────────────────────────────┴───────────────────────────────────┴──────────────────────────────────┘
 
-MEDIUM
-X-Powered-By Header Exposed
-
-LOW
-Missing Cache-Control
 ```
 
 ---
 
-# Project Structure
-
-```
-argus-header/
-
-src/
-└── argus_header/
-    ├── __init__.py
-    ├── cli.py
-    ├── requester.py
-    ├── analyzer.py
-    ├── reporter.py
-    └── utils.py
-
-tests/
-
-README.md
-LICENSE
-pyproject.toml
-```
-
----
-
-# Current Checks
+# 🔐 Security Analysis
 
 ## Security Headers
+
+Checks for:
 
 - Content-Security-Policy
 - Strict-Transport-Security
@@ -222,109 +264,208 @@ pyproject.toml
 
 ## Information Leakage
 
+Checks for:
+
 - Server
 - X-Powered-By
 
 ## CORS
 
+Checks for:
+
 - Wildcard Access-Control-Allow-Origin
 
 ## Performance
+
+Checks for:
 
 - Cache-Control
 
 ---
 
-# Roadmap
+# 📁 Project Structure
 
-## v0.5.0 — Current Release
+```text
+argus-header/
 
-### Core Features
+src/
+└── argus_header/
+    ├── __init__.py
+    ├── __main__.py
+    ├── analyzer.py
+    ├── cli.py
+    ├── reporter.py
+    ├── requester.py
+    ├── utils.py
+    └── verbose.py
 
-* HTTP GET & HEAD request support
-* Configurable request timeout
-* Redirect handling
-* Retry mechanism
-* Parallel URL scanning
-* Rich CLI output
-* JSON report export
-* Security header detection
-* Information leakage detection
-* CORS wildcard analysis
-* Cache-Control analysis
-* PyPI-ready packaging
+tests/
+
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+pyproject.toml
+```
 
 ---
 
-# Development
+# 🗺️ Roadmap
 
-Clone
+## ✅ v0.6.0 — Current Release
+
+### Added
+
+- Comprehensive `--verbose` reporting
+- Scan Information
+- Target Information
+- Request Configuration
+- Connection Information
+- HTTP Response Details
+- Redirect Information
+- Response Headers
+- Security Headers
+- Missing Security Headers
+- Present Security Headers
+- Information Leakage
+- Response Statistics
+- Findings Summary
+- Overall Assessment
+- End of Scan Summary
+
+---
+
+## 🚀 v0.7.0
+
+Planned features:
+
+- Security Score (0–100)
+- Grade (A–F)
+- Cookie Analysis
+- HTML Report Export
+- Markdown Report Export
+- Enhanced JSON Reports
+
+---
+
+## 🚀 v0.8.0
+
+Planned features:
+
+- Unit Tests
+- GitHub Actions
+- Documentation Improvements
+- Architecture Improvements
+
+---
+
+## 🚀 v0.9.0
+
+Planned features:
+
+- TLS Inspection
+- Certificate Analysis
+- HTTP/2 Detection
+- Advanced CORS Analysis
+
+---
+
+## 🎉 v1.0.0
+
+- Stable Public Release
+- Production-ready Documentation
+- Comprehensive Testing
+- Complete HTTP Security Analysis
+
+---
+
+# 💻 Development
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/heyshreee/argus-header.git
+
+cd argus-header
 ```
 
-Install development version
+Install the development version:
 
 ```bash
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
 pip install -e .
 ```
 
-Run
+Run:
 
 ```bash
 argus-header https://example.com
 ```
 
+Run verbose mode:
+
+```bash
+argus-header https://example.com --verbose
+```
+
 ---
 
-# Contributing
+# 🤝 Contributing
 
 Contributions are welcome.
 
-1. Fork the repository
-2. Create a feature branch
+1. Fork the repository.
+
+2. Create a feature branch.
 
 ```bash
 git checkout -b feature/my-feature
 ```
 
-3. Commit
+3. Commit your changes.
 
 ```bash
 git commit -m "feat: add awesome feature"
 ```
 
-4. Push
+4. Push your branch.
 
 ```bash
 git push origin feature/my-feature
 ```
 
-5. Open a Pull Request
+5. Open a Pull Request.
+
+Please read **CONTRIBUTING.md** before submitting major changes.
 
 ---
 
-# License
+# 📄 License
 
 Released under the MIT License.
 
-See LICENSE for details.
+See the `LICENSE` file for details.
 
 ---
 
-# Author
+# 👨‍💻 Author
 
 **Sriram**
 
-GitHub
+GitHub: https://github.com/heyshreee
 
-https://github.com/heyshreee
+PyPI: https://pypi.org/project/argus-header/
 
 ---
 
-## Disclaimer
+# ⚠️ Disclaimer
 
 Argus Header is intended for defensive security, security auditing, learning, and authorized penetration testing only.
 
 Only scan systems that you own or have explicit permission to assess.
+
+The author is not responsible for misuse of this software.
