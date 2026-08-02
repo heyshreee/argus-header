@@ -1,7 +1,10 @@
 import argparse
 import sys
-from concurrent.futures import ThreadPoolExecutor
+import time
+import uuid
 
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 from rich.console import Console
 
 from argus_header import __version__
@@ -34,13 +37,29 @@ def scan_target(url: str, args):
         follow_redirects=not args.no_redirect,
         timeout=args.timeout,
     )
+    started = datetime.now()
+    start_time = time.perf_counter()
 
     findings = analyze_headers(response_data)
-    print_report(response_data, findings, verbose=args.verbose)
+
+    end_time = time.perf_counter()
+    finished = datetime.now()
+
+    scan = {
+        "scan_id": uuid.uuid4().hex[:8],
+        "started": started,
+        "finished": finished,
+        "duration": end_time - start_time,
+        "response": response_data,
+        "findings": findings,
+        "url": url,
+        "args": args,
+    }
+
+    print_report(response_data, findings)
 
     if args.verbose:
-        print_verbose(url, response_data, findings, args)
-
+        print_verbose(scan)
 
     if args.json and len(args.url) == 1:
         save_json(response_data, findings, args.json)
