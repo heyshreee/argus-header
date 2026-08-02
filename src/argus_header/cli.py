@@ -56,7 +56,7 @@ def scan_target(url: str, args):
         "args": args,
     }
 
-    print_report(response_data, findings)
+    print_report(response_data, findings, verbose=args.verbose)
 
     if args.verbose:
         print_verbose(scan)
