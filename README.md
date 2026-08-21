@@ -397,19 +397,6 @@ pyproject.toml
 
 ---
 
-## ✅ v0.6.0
-
-### Added
-
-- Comprehensive `--verbose` reporting
-- Scan Information, Target Information, Request Configuration,
-  Connection Information, HTTP Response, Redirect Information,
-  Response Headers, Security Headers, Missing/Present Security
-  Headers, Information Leakage, Response Statistics,
-  Findings Summary, Overall Assessment, End of Scan sections
-
----
-
 ## 🚀 v0.8.0 — Next
 
 Planned features:
