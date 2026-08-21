@@ -1,3 +1,4 @@
+let lastReport = null;
 let currentRisks = null;
 let currentUrl = '';
 let currentHeader = null;
@@ -16,14 +17,21 @@ const risksContainer = document.getElementById("risksContainer");
 const risksList = document.getElementById("risksList");
 const displayUrl = document.getElementById("displayUrl");
 const clearResultsBtn = document.getElementById("clearResultsBtn");
-const saveReportBtn = document.getElementById("saveReportBtn");
 const analysisForm = document.getElementById("analysisForm");
-const saveText = document.getElementById('saveText');
 const scanId = document.getElementById('scanId');
 const moduleCount = document.getElementById('moduleCount');
+const scorePanel = document.getElementById('score-panel');
+const findingsSummary = document.getElementById('findings-summary');
+const exportButtons = ['save-json', 'save-markdown', 'save-html']
+    .map(id => document.getElementById(id));
 
 
-output.textContent = "scanning... please wait";
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value);
+    return div.innerHTML;
+}
+
 
 analysisForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -39,10 +47,6 @@ analysisForm.addEventListener('submit', async (e) => {
 
     try {
         const response = await fetch(`http://127.0.0.1:8000/analyze?url=${encodeURIComponent(url)}`);
-        // if (!response.ok) {
-        //     showError(`Error: ${response.status} ${response.statusText} ${response.error}`);
-        //     return;
-        // }
         if (!response.ok) {
             const errData = await response.json();
             showError(errData.detail || "Something went wrong");
@@ -50,6 +54,7 @@ analysisForm.addEventListener('submit', async (e) => {
         }
 
         const data = await response.json();
+        lastReport = data;
 
         displayUrl.textContent = data.url;
 
@@ -57,24 +62,32 @@ analysisForm.addEventListener('submit', async (e) => {
         risksContainer.classList.remove("hidden");
         risksList.innerHTML = "";
 
+        renderScore(data.score);
+        renderSummary(data.summary);
+        setExportEnabled(true);
+
         currentUrl = url;
         currentHeader = data.headers;
         currentRisks = data.analysis;
 
-
         scanId.textContent = Math.random().toString(36).substr(2, 9).toUpperCase();
+        currentScanId = scanId.textContent;
 
         moduleCount.textContent = `${currentRisks.length} Modules Loaded`;
 
+        if (currentRisks.length === 0) {
+            risksList.innerHTML = `
+                <div class="p-4 bg-green-50 border-l-4 border-l-green-500 flex items-center">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-green-600 mr-3"></i>
+                    <span class="text-sm font-medium text-green-700">No significant security issues found.</span>
+                </div>`;
+        } else {
+            currentRisks.forEach((risk) => {
+                risksList.innerHTML += createRiskHtml(risk);
+            });
+        }
 
-        currentScanId = scanId.textContent;
-
-        currentRisks.forEach((risk) => {
-            const riskHtml = createRiskHtml(risk);
-            risksList.innerHTML += riskHtml;
-        });
-
-        // ⏱ Processing time
+        lucide.createIcons();
 
         const duration = data.timing.backend_seconds.toFixed(2);
         document.getElementById("scanTime").textContent = `${duration}s`;
@@ -93,6 +106,43 @@ analysisForm.addEventListener('submit', async (e) => {
         setLoading(false);
     }
 })
+
+
+// --- Score Panel ---
+function renderScore(score) {
+    if (!score) {
+        scorePanel.classList.add("hidden");
+        return;
+    }
+
+    scorePanel.classList.remove("hidden");
+
+    const gradeEl = document.getElementById("score-grade");
+    const riskEl = document.getElementById("score-risk");
+
+    document.getElementById("score-value").textContent = score.value;
+    gradeEl.textContent = score.grade;
+    gradeEl.className = `grade-${String(score.grade).toLowerCase()}`;
+    riskEl.textContent = score.risk_level;
+    riskEl.className = `risk-${String(score.risk_level).toLowerCase()}`;
+    document.getElementById("score-penalty").textContent = score.penalty;
+}
+
+
+// --- Findings Summary ---
+function renderSummary(summary) {
+    if (!summary) {
+        findingsSummary.classList.add("hidden");
+        return;
+    }
+
+    findingsSummary.classList.remove("hidden");
+
+    document.getElementById("total-findings").textContent = summary.total_findings;
+    document.getElementById("high-findings").textContent = summary.high;
+    document.getElementById("medium-findings").textContent = summary.medium;
+    document.getElementById("low-findings").textContent = summary.low;
+}
 
 
 // --- Helper: Render Risk HTML ---
@@ -129,14 +179,17 @@ const createRiskHtml = (risk) => {
                         </div>
                         <div class="ml-3 w-full">
                             <div class="flex items-center justify-between mb-1">
-                                <h4 class="text-sm font-bold ${severityColor}">${risk.issue}</h4>
-                                <span class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-white border border-gray-200 ${severityColor}">
-                                    ${risk.severity}
+                                <h4 class="text-sm font-bold ${severityColor}">${escapeHtml(risk.issue)}</h4>
+                                <span class="flex items-center gap-2">
+                                    <span class="rule-id">${escapeHtml(risk.id || "N/A")}</span>
+                                    <span class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-white border border-gray-200 ${severityColor}">
+                                        ${escapeHtml(risk.severity)}
+                                    </span>
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-700 mt-1"><span class="font-semibold">Risk:</span> ${risk.risk}</p>
+                            <p class="text-sm text-gray-700 mt-1"><span class="font-semibold">Risk:</span> ${escapeHtml(risk.risk)}</p>
                             <div class="mt-2 text-sm bg-white/60 p-2 rounded border border-gray-200/50">
-                                <span class="font-semibold text-gray-600">Fix:</span> <code class="text-indigo-600 font-mono text-xs break-all">${risk.fix}</code>
+                                <span class="font-semibold text-gray-600">Fix:</span> <code class="text-indigo-600 font-mono text-xs break-all">${escapeHtml(risk.fix)}</code>
                             </div>
                         </div>
                     </div>
@@ -176,25 +229,147 @@ const setLoading = (isLoading) => {
     }
 };
 
-const setSavedState = (isSaved) => {
-    if (isSaved) {
-        saveReportBtn.className = "px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-all duration-200 bg-green-100 text-green-700 border border-green-200";
-        saveText.textContent = "Saved!";
-        const icon = document.createElement('i');
-        icon.setAttribute('data-lucide', 'check-circle');
-        icon.className = "w-4 h-4";
-        saveReportBtn.replaceChild(icon, saveReportBtn.firstElementChild);
-        lucide.createIcons();
-    } else {
-        saveReportBtn.className = "px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-all duration-200 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-600";
-        saveText.textContent = "Save JSON";
-        const icon = document.createElement('i');
-        icon.setAttribute('data-lucide', 'download');
-        icon.className = "w-4 h-4";
-        saveReportBtn.replaceChild(icon, saveReportBtn.firstElementChild);
-        lucide.createIcons();
-    }
+const setExportEnabled = (enabled) => {
+    exportButtons.forEach((btn) => {
+        btn.disabled = !enabled;
+    });
+};
+
+// --- Client-side exports ---
+function downloadFile(filename, content, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
 }
+
+function safeName(url) {
+    return String(url)
+        .replace(/^https?:\/\//, '')
+        .replace(/[^\w.-]/g, '_')
+        .slice(0, 60) || "scan";
+}
+
+function buildMarkdown(report) {
+    const lines = [];
+    lines.push("# Argus Header Security Report", "");
+    lines.push("## Scan Information", "");
+    lines.push(`- **Target:** \`${report.url}\``);
+    lines.push(`- **Status:** \`${report.status}\``);
+    lines.push(`- **Backend time:** \`${report.timing.backend_seconds}s\``);
+    lines.push("");
+    lines.push("## Security Score", "");
+    lines.push(`**${report.score.value} / 100 — Grade ${report.score.grade}**`, "");
+    lines.push(`- **Risk Level:** ${report.score.risk_level}`);
+    lines.push(`- **Penalty:** ${report.score.penalty}`, "");
+    lines.push("## Findings Summary", "");
+    lines.push(`- **Total:** ${report.summary.total_findings}`);
+    lines.push(`- **High:** ${report.summary.high}`);
+    lines.push(`- **Medium:** ${report.summary.medium}`);
+    lines.push(`- **Low:** ${report.summary.low}`, "");
+    lines.push("## Findings", "");
+
+    if (!report.analysis.length) {
+        lines.push("✅ No significant security issues found.", "");
+    } else {
+        report.analysis.forEach((f) => {
+            lines.push(`### [${f.severity}] ${f.issue}`, "");
+            lines.push(`- **Rule ID:** \`${f.id}\``);
+            lines.push(`- **Category:** ${f.category}`);
+            lines.push(`- **Risk:** ${f.risk}`);
+            lines.push(`- **Fix:** ${f.fix}`, "");
+        });
+    }
+
+    lines.push("---", "");
+    lines.push("*Generated by Argus Header Web Dashboard*", "");
+    return lines.join("\n");
+}
+
+function buildStandaloneHtml(report) {
+    const esc = escapeHtml;
+    const findingsHtml = report.analysis.map((f) => `
+        <article class="finding">
+            <div class="finding-header">
+                <span class="severity severity-${esc(f.severity.toLowerCase())}">${esc(f.severity)}</span>
+                <span class="rule-id">${esc(f.id)}</span>
+            </div>
+            <h3>${esc(f.issue)}</h3>
+            <p><strong>Category:</strong> ${esc(f.category)}</p>
+            <p><strong>Risk:</strong> ${esc(f.risk)}</p>
+            <p><strong>Fix:</strong> ${esc(f.fix)}</p>
+        </article>`).join("");
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Argus Header Security Report</title>
+<style>
+body{background:#0b0f14;color:#e8edf2;font-family:system-ui,sans-serif;line-height:1.6;margin:0;padding:40px}
+h1{margin-top:0}.muted{color:#98a6b5}
+.panel{background:#111820;border:1px solid #26313d;border-radius:12px;padding:20px;margin:16px 0;max-width:900px}
+.score-number{font-size:44px;font-weight:800}
+.finding{background:#111820;border:1px solid #26313d;border-radius:12px;padding:16px;margin:10px 0;max-width:900px}
+.finding-header{display:flex;justify-content:space-between}
+.severity{font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px}
+.severity-high{background:rgba(239,68,68,.15);color:#f87171}
+.severity-medium{background:rgba(245,158,11,.15);color:#fbbf24}
+.severity-low{background:rgba(59,130,246,.15);color:#60a5fa}
+.rule-id{color:#98a6b5;font-family:monospace;font-size:12px}
+table{border-collapse:collapse;width:100%;max-width:900px}
+td{padding:8px;border-bottom:1px solid #26313d;word-break:break-word}
+code{color:#93c5fd}
+</style>
+</head>
+<body>
+<h1>Argus Header Security Report</h1>
+<p class="muted">Target: <code>${esc(report.url)}</code> &middot; Status: ${esc(report.status)}</p>
+<div class="panel">
+<span class="score-number">${esc(report.score.value)}/100</span>
+&mdash; Grade <strong>${esc(report.score.grade)}</strong> &middot; Risk: ${esc(report.score.risk_level)} &middot; Penalty: ${esc(report.score.penalty)}
+</div>
+<div class="panel">Findings: ${report.summary.total_findings} (H:${report.summary.high} M:${report.summary.medium} L:${report.summary.low})</div>
+${findingsHtml || '<div class="panel">✅ No significant security issues found.</div>'}
+<footer class="muted" style="margin-top:24px">Generated by Argus Header Web Dashboard</footer>
+</body>
+</html>`;
+}
+
+document.getElementById("save-json").addEventListener("click", () => {
+    if (!lastReport) return;
+    downloadFile(
+        `argus-${safeName(currentUrl)}.json`,
+        JSON.stringify(lastReport, null, 2),
+        "application/json"
+    );
+});
+
+document.getElementById("save-markdown").addEventListener("click", () => {
+    if (!lastReport) return;
+    downloadFile(
+        `argus-${safeName(currentUrl)}.md`,
+        buildMarkdown(lastReport),
+        "text/markdown"
+    );
+});
+
+document.getElementById("save-html").addEventListener("click", () => {
+    if (!lastReport) return;
+    downloadFile(
+        `argus-${safeName(currentUrl)}.html`,
+        buildStandaloneHtml(lastReport),
+        "text/html"
+    );
+});
+
 
 // --- Event: Clear Results ---
 urlInput.addEventListener("input", (e) => {
@@ -225,6 +400,8 @@ function clearAll() {
     displayUrl.textContent = "";
     urlInput.value = '';
     clearInputBtn.classList.add('hidden');
+    lastReport = null;
+    setExportEnabled(false);
 }
 
 const showError = (msg) => {
@@ -235,43 +412,6 @@ const showError = (msg) => {
 document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
     clearInputBtn.classList.add('hidden');
+    setExportEnabled(false);
 
 });
-
-function downloadReport() {
-    if (!Array.isArray(currentRisks) || currentRisks.length === 0) {
-        return;
-    }
-
-    const safeUrl = currentUrl
-        .replace(/^https?:\/\//, '')
-        .replace(/[^\w.-]/g, '_');
-
-    const exportData = {
-        scan_id: currentScanId,
-        url: currentUrl,
-        timestamp: new Date().toISOString(),
-        headers: currentHeader || {},
-        security_risks: currentRisks
-    };
-
-    const fileData = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([fileData], { type: 'application/json' });
-
-    const objectUrl = URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = `analysis-${safeUrl}-${Date.now()}.json`;
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(objectUrl);
-
-    setSavedState(true);
-    setTimeout(() => setSavedState(false), 3000);
-}
-
-saveReportBtn.addEventListener('click', downloadReport);
