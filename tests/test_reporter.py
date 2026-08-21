@@ -1,7 +1,7 @@
 import os
 import json
-from src.argus.reporter import print_report
-from src.argus.reporter import save_json as reporter_save_json
+from argus_header.reporter import print_report
+from argus_header.reporter import save_json as reporter_save_json
 
 def test_reporter_saves_json(tmp_path):
     response_data = {

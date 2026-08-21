@@ -1,4 +1,4 @@
-from src.argus.requester import fetch_headers
+from argus_header.requester import fetch_headers
 
 def test_fetch_headers_success():
     result = fetch_headers("https://example.com")
