@@ -104,6 +104,22 @@ def test_grade_boundaries():
     assert calculate_grade(0) == "F"
 
 
+def test_cookie_penalties_scored():
+    findings = [
+        {"category": "Cookie", "issue": "Cookie 'session' missing Secure flag", "severity": "MEDIUM"},
+        {"category": "Cookie", "issue": "Cookie 'session' missing HttpOnly flag", "severity": "MEDIUM"},
+        {"category": "Cookie", "issue": "Cookie 'auth' missing SameSite attribute", "severity": "LOW"},
+    ]
+
+    result = calculate_score(findings)
+
+    assert result["penalty"] == 25
+    assert result["score"] == 75
+    assert result["grade"] == "C"
+    assert result["risk_level"] == "MEDIUM"
+    assert result["breakdown"] == {"HIGH": 0, "MEDIUM": 20, "LOW": 5}
+
+
 def test_risk_levels():
     high = [{"issue": "x", "severity": "HIGH"}]
     medium = [{"issue": "x", "severity": "MEDIUM"}]
