@@ -1,4 +1,4 @@
-from src.argus.analyzer import analyze_headers
+from argus_header.analyzer import analyze_headers
 
 def test_analyzer_missing_security_headers():
     response_data = {

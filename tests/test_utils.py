@@ -1,4 +1,4 @@
-from src.argus.utils import normalize_url
+from argus_header.utils import normalize_url
 
 def test_normalize_url_adds_scheme():
     assert normalize_url("example.com") == "https://example.com"
