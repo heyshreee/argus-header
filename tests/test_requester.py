@@ -1,5 +1,6 @@
 from argus_header.requester import fetch_headers
 
+
 def test_fetch_headers_success():
     result = fetch_headers("https://example.com")
 
@@ -7,6 +8,7 @@ def test_fetch_headers_success():
     assert "status_code" in result
     assert "headers" in result
     assert isinstance(result["headers"], dict)
+
 
 def test_fetch_headers_failure():
     # Invalid URL

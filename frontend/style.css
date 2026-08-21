@@ -1,3 +1,106 @@
 body {
   font-family: "Inter", sans-serif;
 }
+
+/* Security Score Panel */
+.score-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+  border: 1px solid #e0e7ff;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.score-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.score-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6366f1;
+}
+
+.score-details {
+  display: flex;
+  gap: 32px;
+}
+
+.score-details > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 72px;
+}
+
+.score-details span {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+.score-details strong {
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+#score-grade.grade-a, #score-grade.grade-b { color: #16a34a; }
+#score-grade.grade-c, #score-grade.grade-d { color: #d97706; }
+#score-grade.grade-f { color: #dc2626; }
+
+#score-risk.risk-high { color: #dc2626; }
+#score-risk.risk-medium { color: #d97706; }
+#score-risk.risk-low { color: #16a34a; }
+
+/* Findings Summary Grid */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.summary-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.summary-card strong {
+  font-size: 26px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.summary-card span {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 700px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Rule ID chip on finding cards */
+.rule-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #9ca3af;
+}

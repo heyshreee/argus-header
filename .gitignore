@@ -24,3 +24,6 @@ report/
 # OS files
 .DS_Store
 .aider*
+
+# test artifacts
+.coverage

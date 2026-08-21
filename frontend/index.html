@@ -96,13 +96,74 @@
                         class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium">
                         Clear Results
                     </button>
-                    <button id="saveReportBtn"
-                        class="px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-all duration-200 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-600">
-                        <i id="saveIcon" data-lucide="download" class="w-4 h-4"></i>
-                        <span id="saveText">Save JSON</span>
+                    <button id="save-json" disabled
+                        class="export-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-all duration-200 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>JSON</span>
+                    </button>
+                    <button id="save-markdown" disabled
+                        class="export-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-all duration-200 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                        <span>Markdown</span>
+                    </button>
+                    <button id="save-html" disabled
+                        class="export-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 transition-all duration-200 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i data-lucide="code" class="w-4 h-4"></i>
+                        <span>HTML</span>
                     </button>
                 </div>
             </div>
+
+            <!-- Security Score Panel -->
+            <section id="score-panel" class="score-panel hidden">
+                <div class="score-main">
+                    <span class="score-label">Security Score</span>
+                    <div class="flex items-baseline gap-1">
+                        <span id="score-value" class="text-5xl font-extrabold">0</span>
+                        <span class="text-lg text-gray-400 font-semibold">/100</span>
+                    </div>
+                </div>
+
+                <div class="score-details">
+                    <div>
+                        <span>Grade</span>
+                        <strong id="score-grade">-</strong>
+                    </div>
+
+                    <div>
+                        <span>Risk</span>
+                        <strong id="score-risk">-</strong>
+                    </div>
+
+                    <div>
+                        <span>Penalty</span>
+                        <strong id="score-penalty">0</strong>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Findings Summary -->
+            <section id="findings-summary" class="summary-grid hidden mt-6">
+                <div class="summary-card">
+                    <strong id="total-findings">0</strong>
+                    <span>Total</span>
+                </div>
+
+                <div class="summary-card">
+                    <strong id="high-findings">0</strong>
+                    <span>High</span>
+                </div>
+
+                <div class="summary-card">
+                    <strong id="medium-findings">0</strong>
+                    <span>Medium</span>
+                </div>
+
+                <div class="summary-card">
+                    <strong id="low-findings">0</strong>
+                    <span>Low</span>
+                </div>
+            </section>
 
             <!-- Security Risks Section -->
             <div id="risksContainer" class="mt-8 hidden">

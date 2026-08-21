@@ -3,7 +3,7 @@
 > Fast, lightweight HTTP security header analyzer built for developers, security engineers, and penetration testers.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
-![Version](https://img.shields.io/badge/version-v0.6.0-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.7.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 Argus Header is a command-line tool that analyzes HTTP response headers and identifies common security misconfigurations, information leakage, and HTTP security best-practice issues. It provides both a concise summary and a detailed verbose report for security assessments.
@@ -30,6 +30,21 @@ Detects missing security headers including:
 - X-Frame-Options
 - X-Content-Type-Options
 
+## Security Score & Grade
+
+- Security Score from 0–100
+- Letter Grade from A–F
+- Risk level and penalty breakdown
+- Stable rule IDs for every finding (e.g. `SEC-001`, `COOKIE-002`)
+
+## Cookie Analysis
+
+Analyzes `Set-Cookie` attributes:
+
+- Secure flag (MEDIUM)
+- HttpOnly flag (MEDIUM)
+- SameSite attribute (LOW)
+
 ## Information Leakage Detection
 
 Detects exposed:
@@ -53,7 +68,9 @@ Analyzes:
 
 - Rich CLI output
 - Detailed `--verbose` mode
-- JSON report export
+- JSON report export (enhanced v0.7 schema)
+- Markdown report export
+- HTML report export (self-contained, escaped)
 - Severity levels
 - Security recommendations
 
@@ -98,7 +115,7 @@ argus-header --version
 Expected output:
 
 ```text
-Argus Header 0.6.0
+Argus Header 0.7.0
 ```
 
 ---
@@ -177,6 +194,34 @@ Export JSON
 argus-header https://example.com --json report.json
 ```
 
+Security Score & Grade
+
+```bash
+argus-header https://example.com --score
+```
+
+Export Markdown Report
+
+```bash
+argus-header https://example.com --markdown report.md
+```
+
+Export HTML Report
+
+```bash
+argus-header https://example.com --html report.html
+```
+
+All Export Formats Together
+
+```bash
+argus-header https://example.com \
+    --score \
+    --json report.json \
+    --markdown report.md \
+    --html report.html
+```
+
 Display Version
 
 ```bash
@@ -198,7 +243,10 @@ argus-header --help
 | `--method` | HTTP Method (GET / HEAD) |
 | `--timeout` | Request timeout |
 | `--parallel` | Scan multiple URLs concurrently |
-| `--json FILE` | Save report as JSON |
+| `--json FILE` | Save report as JSON (v0.7 enhanced schema) |
+| `--score` | Display the security score and grade |
+| `--markdown FILE` | Save a Markdown security report |
+| `--html FILE` | Save an HTML security report |
 | `--no-redirect` | Disable redirect following |
 | `--verbose` | Display detailed scan report |
 | `--version` | Display tool version |
@@ -220,7 +268,7 @@ argus-header --help
  Argus Header
  HTTP Header Security Analyzer
 
-Version: 0.6.0
+Version: 0.7.0
 
 ╭──────── Scan Summary ────────╮
 │ Target: https://example.com/ │
@@ -312,50 +360,44 @@ pyproject.toml
 
 # 🗺️ Roadmap
 
-## ✅ v0.6.0 — Current Release
+## ✅ v0.7.0 — Current Release
+
+### Added
+
+- Security Score (0–100) and Grade (A–F)
+- Risk level and penalty breakdown
+- Cookie analysis: Secure, HttpOnly, SameSite
+- Stable rule IDs for findings
+- Enhanced JSON reports with scan metadata
+- Markdown report export (`--markdown`)
+- HTML report export (`--html`)
+- CLI `--score` option
+- API score/grade/summary exposure
+- Dashboard score panel and finding summaries
+
+---
+
+## ✅ v0.6.0
 
 ### Added
 
 - Comprehensive `--verbose` reporting
-- Scan Information
-- Target Information
-- Request Configuration
-- Connection Information
-- HTTP Response Details
-- Redirect Information
-- Response Headers
-- Security Headers
-- Missing Security Headers
-- Present Security Headers
-- Information Leakage
-- Response Statistics
-- Findings Summary
-- Overall Assessment
-- End of Scan Summary
+- Scan Information, Target Information, Request Configuration,
+  Connection Information, HTTP Response, Redirect Information,
+  Response Headers, Security Headers, Missing/Present Security
+  Headers, Information Leakage, Response Statistics,
+  Findings Summary, Overall Assessment, End of Scan sections
 
 ---
 
-## 🚀 v0.7.0
+## 🚀 v0.8.0 — Next
 
 Planned features:
 
-- Security Score (0–100)
-- Grade (A–F)
-- Cookie Analysis
-- HTML Report Export
-- Markdown Report Export
-- Enhanced JSON Reports
-
----
-
-## 🚀 v0.8.0
-
-Planned features:
-
-- Unit Tests
-- GitHub Actions
-- Documentation Improvements
-- Architecture Improvements
+- Expanded unit test coverage (CLI / verbose rendering)
+- GitHub Actions CI
+- Documentation improvements
+- Architecture improvements
 
 ---
 

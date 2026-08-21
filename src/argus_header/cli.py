@@ -2,15 +2,20 @@ import argparse
 import sys
 import time
 import uuid
-
-from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+
 from rich.console import Console
+from rich.panel import Panel
 
 from argus_header import __version__
-from .requester import fetch_headers
+
 from .analyzer import analyze_headers
-from .reporter import print_report, save_json
+from .html_report import save_html
+from .markdown import save_markdown
+from .reporter import build_json_report, print_report, save_json
+from .requester import fetch_headers
+from .scorer import calculate_score
 from .verbose import print_verbose
 
 console = Console()
@@ -26,9 +31,11 @@ BANNER = r"""
  HTTP Header Security Analyzer
 """
 
+
 def print_banner():
     console.print(f"[bold cyan]{BANNER}[/bold cyan]")
     console.print(f"[bold]Version:[/bold] {__version__}\n")
+
 
 def scan_target(url: str, args):
     response_data = fetch_headers(
@@ -37,13 +44,14 @@ def scan_target(url: str, args):
         follow_redirects=not args.no_redirect,
         timeout=args.timeout,
     )
-    started = datetime.now()
+    started = datetime.now(timezone.utc)
     start_time = time.perf_counter()
 
     findings = analyze_headers(response_data)
+    score_data = calculate_score(findings)
 
     end_time = time.perf_counter()
-    finished = datetime.now()
+    finished = datetime.now(timezone.utc)
 
     scan = {
         "scan_id": uuid.uuid4().hex[:8],
@@ -58,11 +66,39 @@ def scan_target(url: str, args):
 
     print_report(response_data, findings, verbose=args.verbose)
 
+    if args.score:
+        console.print(
+            Panel(
+                f"[bold]Score:[/bold] {score_data['score']}/100\n"
+                f"[bold]Grade:[/bold] {score_data['grade']}\n"
+                f"[bold]Risk:[/bold] {score_data['risk_level']}\n"
+                f"[bold]Penalty:[/bold] {score_data['penalty']}",
+                title="Security Score",
+                expand=False,
+            )
+        )
+
     if args.verbose:
         print_verbose(scan)
 
-    if args.json and len(args.url) == 1:
-        save_json(response_data, findings, args.json)
+    if len(args.url) == 1 and (args.json or args.markdown or args.html):
+        report = build_json_report(
+            response_data=response_data,
+            findings=findings,
+            score_data=score_data,
+            scan_id=scan["scan_id"],
+            target=url,
+            method=args.method,
+            duration=scan["duration"],
+        )
+
+        if args.json:
+            save_json(report, args.json)
+        if args.markdown:
+            save_markdown(report, args.markdown)
+        if args.html:
+            save_html(report, args.html)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -119,15 +155,31 @@ Examples:
     )
 
     parser.add_argument(
+        "--score",
+        action="store_true",
+        help="Display the security score and grade.",
+    )
+
+    parser.add_argument(
+        "--markdown",
+        metavar="FILE",
+        help="Save a Markdown security report.",
+    )
+
+    parser.add_argument(
+        "--html",
+        metavar="FILE",
+        help="Save an HTML security report.",
+    )
+
+    parser.add_argument(
         "--parallel",
         action="store_true",
         help="Scan multiple URLs concurrently.",
     )
 
     parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Show detailed scan information."
+        "--verbose", action="store_true", help="Show detailed scan information."
     )
 
     args = parser.parse_args()
@@ -153,7 +205,7 @@ Examples:
         console.print("\n[bold yellow]Scan cancelled by user.[/bold yellow]")
         sys.exit(130)
 
-    except Exception as exc:
+    except (OSError, RuntimeError, ValueError, KeyError) as exc:
         console.print(f"\n[bold red]Unexpected error:[/bold red] {exc}")
         sys.exit(1)
 
