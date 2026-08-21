@@ -6,7 +6,7 @@
 ![Version](https://img.shields.io/badge/version-v0.7.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-Argus Header is a command-line tool that analyzes HTTP response headers and identifies common security misconfigurations, information leakage, and HTTP security best-practice issues. It provides both a concise summary and a detailed verbose report for security assessments.
+Argus Header is a command-line tool that analyzes HTTP response headers and identifies common security misconfigurations, information leakage, and HTTP security best-practice issues. It scores each target from 0–100 with a letter grade and exports reports as JSON, Markdown, or HTML.
 
 ---
 
@@ -257,7 +257,7 @@ argus-header --help
 # 📋 Example Output
 
 ```code
-(.venv) PS C:\pr0j3t\argus-header> argus-header https://example.com --verbose         
+$ argus-header https://example.com --score
 
    ___                             
   / _ | _______ _____ _____ _____  
@@ -275,26 +275,38 @@ Version: 0.7.0
 │ Status: 200                  │
 │ Headers Found: 11            │
 ╰──────────────────────────────╯
-                                                    Analysis Findings                                                     
-┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Severity     ┃ Issue                            ┃ Risk                              ┃ Recommendation                   ┃
-┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ HIGH         │ Missing Content-Security-Policy  │ XSS (Cross-Site Scripting)        │ Add a 'Content-Security-Policy'  │
-│              │                                  │ attacks are easier to exploit.    │ header defining allowed content  │
-│              │                                  │                                   │ sources.                         │
-│ HIGH         │ Missing                          │ Susceptible to Man-in-the-Middle  │ Add 'Strict-Transport-Security:  │
-│              │ Strict-Transport-Security        │ (MITM) protocol downgrade         │ max-age=63072000;                │
-│              │                                  │ attacks.                          │ includeSubDomains'.              │
-│ HIGH         │ Missing X-Frame-Options          │ Vulnerable to Clickjacking        │ Add 'X-Frame-Options: DENY' or   │
-│              │                                  │ attacks.                          │ 'SAMEORIGIN'.                    │
-│ MEDIUM       │ Missing X-Content-Type-Options   │ Browsers may MIME-sniff the       │ Add 'X-Content-Type-Options:     │
-│              │                                  │ response body, leading to XSS.    │ nosniff'.                        │
-│ LOW          │ Server Header Leaked: cloudflare │ Reveals server technology,        │ Configure server to suppress or  │
-│              │                                  │ helping attackers verify CVEs.    │ obfuscate the 'Server' header.   │
-│ LOW          │ Missing Cache-Control Header     │ Browser may not cache resources   │ Add 'Cache-Control' header       │
-│              │                                  │ efficiently, slowing load times.  │ (e.g., max-age=3600).            │
-└──────────────┴──────────────────────────────────┴───────────────────────────────────┴──────────────────────────────────┘
+                                     Analysis Findings                                     
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Severity     ┃ Issue                     ┃ Risk                      ┃ Recommendation            ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ HIGH         │ Missing                   │ XSS (Cross-Site           │ Add a                     │
+│              │ Content-Security-Policy   │ Scripting) attacks are    │ 'Content-Security-Policy' │
+│              │                           │ easier to exploit.        │ header defining allowed   │
+│              │                           │                           │ content sources.          │
+│ HIGH         │ Missing                   │ Susceptible to            │ Add                       │
+│              │ Strict-Transport-Security │ Man-in-the-Middle (MITM)  │ 'Strict-Transport-Securi… │
+│              │                           │ protocol downgrade        │ max-age=63072000;         │
+│              │                           │ attacks.                  │ includeSubDomains'.       │
+│ HIGH         │ Missing X-Frame-Options   │ Vulnerable to             │ Add 'X-Frame-Options:     │
+│              │                           │ Clickjacking attacks.     │ DENY' or 'SAMEORIGIN'.    │
+│ MEDIUM       │ Missing                   │ Browsers may MIME-sniff   │ Add                       │
+│              │ X-Content-Type-Options    │ the response body,        │ 'X-Content-Type-Options:  │
+│              │                           │ leading to XSS.           │ nosniff'.                 │
+│ LOW          │ Server Header Leaked:     │ Reveals server            │ Configure server to       │
+│              │ cloudflare                │ technology, helping       │ suppress or obfuscate the │
+│              │                           │ attackers verify CVEs.    │ 'Server' header.          │
+│ LOW          │ Missing Cache-Control     │ Browser may not cache     │ Add 'Cache-Control'       │
+│              │ Header                    │ resources efficiently,    │ header (e.g.,             │
+│              │                           │ slowing load times.       │ max-age=3600).            │
+└──────────────┴───────────────────────────┴───────────────────────────┴───────────────────────────┘
 
+Tip: Run with --verbose to view detailed scan information.
+╭─ Security Score ─╮
+│ Score: 27/100    │
+│ Grade: F         │
+│ Risk: HIGH       │
+│ Penalty: 73      │
+╰──────────────────╯
 ```
 
 ---
@@ -340,14 +352,22 @@ src/
 └── argus_header/
     ├── __init__.py
     ├── __main__.py
-    ├── analyzer.py
-    ├── cli.py
-    ├── reporter.py
-    ├── requester.py
-    ├── utils.py
-    └── verbose.py
+    ├── analyzer.py        # rule engine with stable rule IDs
+    ├── cookies.py         # Set-Cookie attribute analysis
+    ├── scorer.py          # security score / grade engine
+    ├── cli.py             # argument parsing & orchestration
+    ├── reporter.py        # terminal output + canonical report + JSON export
+    ├── markdown.py        # Markdown report renderer
+    ├── html_report.py     # HTML report renderer
+    ├── requester.py       # HTTP fetch engine (retries, redirects)
+    ├── schemas.py         # Pydantic models for the API layer
+    ├── utils.py           # URL normalization
+    └── verbose.py         # 15-section detailed report
 
+api.py                     # FastAPI service (GET/POST /analyze)
+frontend/                  # vanilla JS dashboard with score panel & exports
 tests/
+docs/
 
 README.md
 CHANGELOG.md
@@ -439,7 +459,11 @@ python -m venv .venv
 # Windows
 .venv\Scripts\activate
 
+# Linux / macOS
+source .venv/bin/activate
+
 pip install -e .
+pip install -r requirements-dev.txt
 ```
 
 Run:
@@ -452,6 +476,15 @@ Run verbose mode:
 
 ```bash
 argus-header https://example.com --verbose
+```
+
+Run the test suite and static checks:
+
+```bash
+pytest tests/ -v
+ruff check src/ tests/
+black --check src/ tests/
+mypy src/
 ```
 
 ---
