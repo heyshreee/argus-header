@@ -28,6 +28,7 @@ def analyze_cookies(headers: dict[str, str]) -> list[dict]:
         if "secure" not in attributes:
             findings.append(
                 {
+                    "id": "COOKIE-001",
                     "category": "Cookie",
                     "issue": f"Cookie '{cookie_name}' missing Secure flag",
                     "severity": "MEDIUM",
@@ -45,6 +46,7 @@ def analyze_cookies(headers: dict[str, str]) -> list[dict]:
         if "httponly" not in attributes:
             findings.append(
                 {
+                    "id": "COOKIE-002",
                     "category": "Cookie",
                     "issue": f"Cookie '{cookie_name}' missing HttpOnly flag",
                     "severity": "MEDIUM",
@@ -62,6 +64,7 @@ def analyze_cookies(headers: dict[str, str]) -> list[dict]:
         if "samesite" not in attributes:
             findings.append(
                 {
+                    "id": "COOKIE-003",
                     "category": "Cookie",
                     "issue": f"Cookie '{cookie_name}' missing SameSite attribute",
                     "severity": "LOW",

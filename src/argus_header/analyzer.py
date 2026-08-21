@@ -16,6 +16,7 @@ def analyze_headers(headers_data):
     # Content-Security-Policy
     if "content-security-policy" not in headers:
         findings.append({
+            "id": "SEC-001",
             "category": "Security",
             "issue": "Missing Content-Security-Policy",
             "severity": "HIGH",
@@ -26,6 +27,7 @@ def analyze_headers(headers_data):
     # Strict-Transport-Security (HSTS)
     if "strict-transport-security" not in headers:
         findings.append({
+            "id": "SEC-002",
             "category": "Security",
             "issue": "Missing Strict-Transport-Security",
             "severity": "HIGH",
@@ -36,6 +38,7 @@ def analyze_headers(headers_data):
     # X-Frame-Options
     if "x-frame-options" not in headers and "content-security-policy" not in headers:
         findings.append({
+            "id": "SEC-003",
             "category": "Security",
             "issue": "Missing X-Frame-Options",
             "severity": "HIGH",
@@ -46,6 +49,7 @@ def analyze_headers(headers_data):
     # X-Content-Type-Options
     if "x-content-type-options" not in headers:
         findings.append({
+            "id": "SEC-004",
             "category": "Security",
             "issue": "Missing X-Content-Type-Options",
             "severity": "MEDIUM",
@@ -58,6 +62,7 @@ def analyze_headers(headers_data):
     # Server Header
     if "server" in headers:
         findings.append({
+            "id": "LEAK-001",
             "category": "Leakage",
             "issue": f"Server Header Leaked: {headers['server']}",
             "severity": "LOW",
@@ -68,6 +73,7 @@ def analyze_headers(headers_data):
     # X-Powered-By
     if "x-powered-by" in headers:
         findings.append({
+            "id": "LEAK-002",
             "category": "Leakage",
             "issue": f"X-Powered-By Leaked: {headers['x-powered-by']}",
             "severity": "MEDIUM",
@@ -80,6 +86,7 @@ def analyze_headers(headers_data):
     if "access-control-allow-origin" in headers:
         if headers["access-control-allow-origin"] == "*":
             findings.append({
+                "id": "CORS-001",
                 "category": "CORS",
                 "issue": "CORS Access-Control-Allow-Origin is '*'",
                 "severity": "MEDIUM",
@@ -92,6 +99,7 @@ def analyze_headers(headers_data):
     # Cache-Control
     if "cache-control" not in headers:
         findings.append({
+            "id": "PERF-001",
             "category": "Performance",
             "issue": "Missing Cache-Control Header",
             "severity": "LOW",

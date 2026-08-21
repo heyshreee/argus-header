@@ -31,6 +31,8 @@ def test_reporter_saves_json(tmp_path):
     with open(file_path, "r") as f:
         data = json.load(f)
 
-    assert data["target"] == "https://example.com"
-    assert data["status"] == 200
+    assert data["scan"]["target"] == "https://example.com"
+    assert data["scan"]["status"] == 200
     assert isinstance(data["findings"], list)
+    assert data["schema_version"] == "0.7"
+    assert "timestamp" in data["scan"]

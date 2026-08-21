@@ -1,10 +1,68 @@
 import json
+import uuid
+from datetime import datetime, timezone
+
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from rich.text import Text
+from rich.table import Table
+
+from argus_header import APP_NAME, __version__
+
+from .scorer import calculate_score
 
 console = Console()
+
+SCHEMA_VERSION = "0.7"
+
+
+def build_json_report(
+    response_data,
+    findings,
+    score_data,
+    scan_id,
+    target,
+    method="GET",
+    duration=0.0,
+):
+    """Build the canonical v0.7 report dictionary.
+
+    Single source of truth consumed by JSON export, the API and the
+    future Markdown/HTML renderers.
+    """
+    high = sum(1 for f in findings if f.get("severity") == "HIGH")
+    medium = sum(1 for f in findings if f.get("severity") == "MEDIUM")
+    low = sum(1 for f in findings if f.get("severity") == "LOW")
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "tool": {
+            "name": APP_NAME,
+            "version": __version__,
+        },
+        "scan": {
+            "id": scan_id,
+            "target": target,
+            "final_url": response_data.get("url"),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "duration_seconds": round(duration, 4),
+            "method": method,
+            "status": response_data.get("status_code"),
+        },
+        "score": {
+            "value": score_data["score"],
+            "grade": score_data["grade"],
+            "risk_level": score_data["risk_level"],
+            "penalty": score_data["penalty"],
+        },
+        "summary": {
+            "total_findings": len(findings),
+            "high": high,
+            "medium": medium,
+            "low": low,
+        },
+        "headers": response_data.get("headers", {}),
+        "findings": findings,
+    }
 
 def print_report(response_data, findings, verbose=False):
     """Prints a pretty CLI report."""
@@ -56,18 +114,19 @@ def print_report(response_data, findings, verbose=False):
 
 
 def save_json(response_data, findings, filepath):
-    """Saves the report to a JSON file."""
-    output = {
-        "target": response_data.get("url"),
-        "status": response_data.get("status_code"),
-        "scan_time": "Now", # You can use datetime here
-        "headers": response_data.get("headers"),
-        "findings": findings
-    }
-    
+    """Saves the report to a JSON file using the canonical v0.7 schema."""
+    report = build_json_report(
+        response_data,
+        findings,
+        calculate_score(findings),
+        uuid.uuid4().hex[:8],
+        response_data.get("url") or "",
+        method=response_data.get("method", "GET"),
+    )
+
     try:
         with open(filepath, 'w') as f:
-            json.dump(output, f, indent=4)
+            json.dump(report, f, indent=4)
         console.print(f"[bold green]✔ Report saved to {filepath}[/bold green]")
     except Exception as e:
         console.print(f"[bold red]Failed to save JSON:[/bold red] {e}")

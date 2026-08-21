@@ -80,3 +80,13 @@ def test_multiple_cookies_each_analyzed():
     assert any("'a' missing SameSite" in i for i in issues)
     assert any("'b' missing Secure" in i for i in issues)
     assert any("'b' missing HttpOnly" in i for i in issues)
+
+
+def test_cookie_findings_use_stable_ids():
+    headers = {"Set-Cookie": "session=abc123"}
+
+    findings = analyze_cookies(headers)
+
+    ids = sorted(f["id"] for f in findings)
+
+    assert ids == ["COOKIE-001", "COOKIE-002", "COOKIE-003"]
