@@ -1,3 +1,6 @@
+from .cookies import analyze_cookies
+
+
 def analyze_headers(headers_data):
     """
     Analyzes the raw headers and returns a list of findings.
@@ -95,5 +98,9 @@ def analyze_headers(headers_data):
             "risk": "Browser may not cache resources efficiently, slowing load times.",
             "fix": "Add 'Cache-Control' header (e.g., max-age=3600)."
         })
+
+    # --- 5. Cookie Security ---
+
+    findings.extend(analyze_cookies(headers))
 
     return findings

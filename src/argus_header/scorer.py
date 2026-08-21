@@ -5,8 +5,6 @@ risk level and severity breakdown. The analyzer remains the single
 source of truth for detection; this module only applies penalties.
 """
 
-from typing import Dict, List
-
 
 PENALTIES = {
     "Missing Content-Security-Policy": 20,
@@ -22,8 +20,14 @@ PENALTY_PREFIXES = [
     ("Server Header Leaked:", 5),
 ]
 
+PENALTY_SUBSTRINGS = [
+    ("missing Secure flag", 10),
+    ("missing HttpOnly flag", 10),
+    ("missing SameSite attribute", 5),
+]
 
-def calculate_score(findings: List[Dict]) -> Dict:
+
+def calculate_score(findings: list[dict]) -> dict:
     """Calculate a 0-100 security score from analyzer findings."""
 
     penalty = 0
@@ -73,7 +77,7 @@ def calculate_grade(score: int) -> str:
     return "F"
 
 
-def calculate_risk_level(findings: List[Dict]) -> str:
+def calculate_risk_level(findings: list[dict]) -> str:
     """Determine overall risk from finding severities."""
 
     severities = {finding.get("severity") for finding in findings}
@@ -86,13 +90,21 @@ def calculate_risk_level(findings: List[Dict]) -> str:
 
 
 def _lookup_penalty(issue: str) -> int:
-    """Resolve the penalty for an issue string (exact match, then prefix)."""
+    """Resolve the penalty for an issue string.
+
+    Matching order: exact key, then known prefix (dynamic leak values),
+    then substring (cookie findings embed the cookie name).
+    """
 
     if issue in PENALTIES:
         return PENALTIES[issue]
 
     for prefix, penalty in PENALTY_PREFIXES:
         if issue.startswith(prefix):
+            return penalty
+
+    for fragment, penalty in PENALTY_SUBSTRINGS:
+        if fragment in issue:
             return penalty
 
     return 0
