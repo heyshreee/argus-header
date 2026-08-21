@@ -24,7 +24,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # frontend access
+    allow_origins=["*"],  # frontend access
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -77,13 +77,19 @@ def _analyze(url: str) -> AnalyzeResponse:
     )
 
 
-@app.get("/analyze", response_model=AnalyzeResponse,
-         summary="Fetch and analyze HTTP headers from a URL")
+@app.get(
+    "/analyze",
+    response_model=AnalyzeResponse,
+    summary="Fetch and analyze HTTP headers from a URL",
+)
 def analyze_url(url: str):
     return _analyze(url)
 
 
-@app.post("/analyze", response_model=AnalyzeResponse,
-          summary="Fetch and analyze HTTP headers from a URL (POST)")
+@app.post(
+    "/analyze",
+    response_model=AnalyzeResponse,
+    summary="Fetch and analyze HTTP headers from a URL (POST)",
+)
 def analyze_url_post(payload: AnalyzeRequest):
     return _analyze(str(payload.url))

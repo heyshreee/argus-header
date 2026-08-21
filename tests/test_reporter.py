@@ -20,7 +20,7 @@ def make_canonical_report():
             "issue": "Missing CSP",
             "severity": "HIGH",
             "risk": "XSS risk",
-            "fix": "Add CSP header"
+            "fix": "Add CSP header",
         }
     ]
 

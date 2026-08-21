@@ -4,7 +4,7 @@
 def analyze_cookies(headers: dict[str, str]) -> list[dict]:
     """Analyze Set-Cookie headers for security attributes."""
 
-    findings = []
+    findings: list[dict] = []
 
     cookies = []
 
@@ -20,10 +20,7 @@ def analyze_cookies(headers: dict[str, str]) -> list[dict]:
 
         cookie_name = parts[0].split("=", 1)[0].strip()
 
-        attributes = {
-            part.split("=", 1)[0].strip().lower()
-            for part in parts[1:]
-        }
+        attributes = {part.split("=", 1)[0].strip().lower() for part in parts[1:]}
 
         if "secure" not in attributes:
             findings.append(
@@ -37,8 +34,7 @@ def analyze_cookies(headers: dict[str, str]) -> list[dict]:
                         "HTTP connection."
                     ),
                     "fix": (
-                        f"Add the Secure attribute to the '{cookie_name}' "
-                        "cookie."
+                        f"Add the Secure attribute to the '{cookie_name}' " "cookie."
                     ),
                 }
             )
@@ -55,8 +51,7 @@ def analyze_cookies(headers: dict[str, str]) -> list[dict]:
                         "increasing the impact of XSS attacks."
                     ),
                     "fix": (
-                        f"Add the HttpOnly attribute to the '{cookie_name}' "
-                        "cookie."
+                        f"Add the HttpOnly attribute to the '{cookie_name}' " "cookie."
                     ),
                 }
             )
@@ -69,8 +64,7 @@ def analyze_cookies(headers: dict[str, str]) -> list[dict]:
                     "issue": f"Cookie '{cookie_name}' missing SameSite attribute",
                     "severity": "LOW",
                     "risk": (
-                        "The cookie has no explicit cross-site request "
-                        "policy."
+                        "The cookie has no explicit cross-site request " "policy."
                     ),
                     "fix": (
                         f"Add SameSite=Lax, SameSite=Strict, or an "

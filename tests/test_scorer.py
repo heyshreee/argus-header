@@ -106,9 +106,21 @@ def test_grade_boundaries():
 
 def test_cookie_penalties_scored():
     findings = [
-        {"category": "Cookie", "issue": "Cookie 'session' missing Secure flag", "severity": "MEDIUM"},
-        {"category": "Cookie", "issue": "Cookie 'session' missing HttpOnly flag", "severity": "MEDIUM"},
-        {"category": "Cookie", "issue": "Cookie 'auth' missing SameSite attribute", "severity": "LOW"},
+        {
+            "category": "Cookie",
+            "issue": "Cookie 'session' missing Secure flag",
+            "severity": "MEDIUM",
+        },
+        {
+            "category": "Cookie",
+            "issue": "Cookie 'session' missing HttpOnly flag",
+            "severity": "MEDIUM",
+        },
+        {
+            "category": "Cookie",
+            "issue": "Cookie 'auth' missing SameSite attribute",
+            "severity": "LOW",
+        },
     ]
 
     result = calculate_score(findings)

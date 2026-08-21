@@ -86,8 +86,11 @@ def test_timestamp_is_iso8601_utc():
     response = {"success": True, "url": "u", "status_code": 200, "headers": {}}
 
     report = build_json_report(
-        response, [], {"score": 100, "grade": "A", "risk_level": "LOW", "penalty": 0},
-        "id1", "t",
+        response,
+        [],
+        {"score": 100, "grade": "A", "risk_level": "LOW", "penalty": 0},
+        "id1",
+        "t",
     )
 
     stamp = report["scan"]["timestamp"]

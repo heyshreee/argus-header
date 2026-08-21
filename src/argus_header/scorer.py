@@ -5,7 +5,6 @@ risk level and severity breakdown. The analyzer remains the single
 source of truth for detection; this module only applies penalties.
 """
 
-
 PENALTIES = {
     "Missing Content-Security-Policy": 20,
     "Missing Strict-Transport-Security": 20,

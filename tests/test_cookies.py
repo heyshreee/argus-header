@@ -2,9 +2,7 @@ from argus_header.cookies import analyze_cookies
 
 
 def test_secure_cookie():
-    headers = {
-        "Set-Cookie": "session=abc123; Secure; HttpOnly; SameSite=Lax"
-    }
+    headers = {"Set-Cookie": "session=abc123; Secure; HttpOnly; SameSite=Lax"}
 
     findings = analyze_cookies(headers)
 
@@ -12,9 +10,7 @@ def test_secure_cookie():
 
 
 def test_missing_secure():
-    headers = {
-        "Set-Cookie": "session=abc123; HttpOnly; SameSite=Lax"
-    }
+    headers = {"Set-Cookie": "session=abc123; HttpOnly; SameSite=Lax"}
 
     findings = analyze_cookies(headers)
 
@@ -24,9 +20,7 @@ def test_missing_secure():
 
 
 def test_missing_httponly():
-    headers = {
-        "Set-Cookie": "session=abc123; Secure; SameSite=Lax"
-    }
+    headers = {"Set-Cookie": "session=abc123; Secure; SameSite=Lax"}
 
     findings = analyze_cookies(headers)
 
@@ -36,9 +30,7 @@ def test_missing_httponly():
 
 
 def test_missing_samesite():
-    headers = {
-        "Set-Cookie": "session=abc123; Secure; HttpOnly"
-    }
+    headers = {"Set-Cookie": "session=abc123; Secure; HttpOnly"}
 
     findings = analyze_cookies(headers)
 
@@ -48,9 +40,7 @@ def test_missing_samesite():
 
 
 def test_missing_all_attributes():
-    headers = {
-        "Set-Cookie": "session=abc123"
-    }
+    headers = {"Set-Cookie": "session=abc123"}
 
     findings = analyze_cookies(headers)
 
@@ -58,9 +48,7 @@ def test_missing_all_attributes():
 
 
 def test_no_cookie():
-    headers = {
-        "Content-Type": "text/html"
-    }
+    headers = {"Content-Type": "text/html"}
 
     findings = analyze_cookies(headers)
 

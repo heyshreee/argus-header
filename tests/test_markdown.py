@@ -67,7 +67,9 @@ def test_markdown_clean_site():
 
 def test_markdown_escapes_pipes_in_header_values(tmp_path):
     report = sample_report()
-    report["headers"] = {"Content-Security-Policy": "default-src 'self'; frame-ancestors |none|"}
+    report["headers"] = {
+        "Content-Security-Policy": "default-src 'self'; frame-ancestors |none|"
+    }
 
     markdown = render_markdown(report)
 

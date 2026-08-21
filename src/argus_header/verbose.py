@@ -1,7 +1,8 @@
-from datetime import datetime
 import platform
 import sys
+from datetime import datetime
 from urllib.parse import urlparse
+
 from rich.console import Console
 
 from argus_header import __version__
@@ -21,6 +22,7 @@ SECURITY_HEADERS = [
     "Cross-Origin-Resource-Policy",
 ]
 
+
 def print_scan_information(scan):
     """Print scan metadata."""
 
@@ -30,9 +32,7 @@ def print_scan_information(scan):
     finished = scan.get("finished")
     duration = scan.get("duration")
 
-    console.print(
-        f"[bold]Scan ID[/bold]          : {scan.get('scan_id', 'N/A')}"
-    )
+    console.print(f"[bold]Scan ID[/bold]          : {scan.get('scan_id', 'N/A')}")
 
     console.print(
         f"[bold]Started[/bold]         : "
@@ -45,17 +45,17 @@ def print_scan_information(scan):
     )
 
     console.print(
-        f"[bold]Duration[/bold]        : "
-        f"{duration:.3f} sec" if isinstance(duration, (int, float)) else f"[bold]Duration[/bold]        : N/A"
+        f"[bold]Duration[/bold]        : " f"{duration:.3f} sec"
+        if isinstance(duration, (int, float))
+        else "[bold]Duration[/bold]        : N/A"
     )
 
     console.print(f"[bold]Argus Version[/bold]  : {__version__}")
-    console.print(
-        f"[bold]Python Version[/bold] : {sys.version.split()[0]}"
-    )
+    console.print(f"[bold]Python Version[/bold] : {sys.version.split()[0]}")
     console.print(
         f"[bold]Operating System[/bold]: {platform.system()} {platform.release()}"
     )
+
 
 def print_target_information(scan):
     """Print information about the scanned target."""
@@ -79,7 +79,8 @@ def print_target_information(scan):
     console.print(f"[bold]Hostname[/bold]     : {hostname}")
     console.print(f"[bold]Port[/bold]         : {port}")
     console.print(f"[bold]Protocol[/bold]     : {protocol}")
-    console.print(f"[bold]Method[/bold]       : {scan['args'].method}")   
+    console.print(f"[bold]Method[/bold]       : {scan['args'].method}")
+
 
 def print_request_configuration(scan):
     """Print the request configuration used for the scan."""
@@ -99,8 +100,9 @@ def print_request_configuration(scan):
     console.print(
         f"[bold]JSON Export[/bold]    : {args.json if args.json else 'Disabled'}"
     )
-    console.print(f"[bold]Verbose Mode[/bold]  : Enabled")
+    console.print("[bold]Verbose Mode[/bold]  : Enabled")
     console.print(f"[bold]Argus Version[/bold]  : {__version__}")
+
 
 def print_connection_information(scan):
     """Print connection information."""
@@ -117,17 +119,13 @@ def print_connection_information(scan):
         30: "HTTP/3",
     }
 
-    http_version = http_versions.get(
-        response.get("http_version"),
-        "Unknown"
-    )
+    http_version = http_versions.get(response.get("http_version"), "Unknown")
 
     console.print(f"[bold]HTTP Version[/bold] : {http_version}")
 
     if "response_time" in scan:
-        console.print(
-            f"[bold]Response Time[/bold]: {scan['response_time']:.3f} sec"
-        )
+        console.print(f"[bold]Response Time[/bold]: {scan['response_time']:.3f} sec")
+
 
 def print_http_response(scan):
     """Print HTTP response information."""
@@ -147,12 +145,9 @@ def print_http_response(scan):
     console.print(
         f"[bold]Content-Encoding[/bold] : {headers.get('Content-Encoding', 'None')}"
     )
-    console.print(
-        f"[bold]Server[/bold]           : {headers.get('Server', 'Unknown')}"
-    )
-    console.print(
-        f"[bold]Date[/bold]             : {headers.get('Date', 'Unknown')}"
-    )
+    console.print(f"[bold]Server[/bold]           : {headers.get('Server', 'Unknown')}")
+    console.print(f"[bold]Date[/bold]             : {headers.get('Date', 'Unknown')}")
+
 
 def print_redirect_information(scan):
     """Print redirect information."""
@@ -169,6 +164,7 @@ def print_redirect_information(scan):
         console.print(f"[bold]Original URL[/bold]    : {original_url}")
         console.print(f"[bold]Final URL[/bold]       : {final_url}")
 
+
 def print_response_headers(scan):
     """Print all HTTP response headers."""
 
@@ -179,6 +175,7 @@ def print_response_headers(scan):
     for header, value in headers.items():
         console.print(f"[bold]{header}[/bold]")
         console.print(f"    {value}\n")
+
 
 def print_security_headers(scan):
     """Display important HTTP security headers."""
@@ -209,6 +206,7 @@ def print_security_headers(scan):
             console.print(f"[red]✘ {header}[/red]")
             console.print("    Missing\n")
 
+
 def print_missing_security_headers(scan):
     """Print missing security headers."""
 
@@ -228,6 +226,7 @@ def print_missing_security_headers(scan):
 
     for header in missing:
         console.print(f"[red]✘ {header}[/red]")
+
 
 def print_present_security_headers(scan):
     """Print present security headers."""
@@ -249,6 +248,7 @@ def print_present_security_headers(scan):
     for header, value in present:
         console.print(f"[green]✔ {header}[/green]")
         console.print(f"    {value}\n")
+
 
 def print_information_leakage(scan):
     """Display information leakage headers."""
@@ -275,6 +275,7 @@ def print_information_leakage(scan):
             console.print(f"[green]{header}[/green]")
             console.print("    Not Present\n")
 
+
 def print_response_statistics(scan):
     """Display response statistics."""
 
@@ -284,9 +285,7 @@ def print_response_statistics(scan):
 
     total_headers = len(headers)
 
-    security_present = sum(
-        1 for h in SECURITY_HEADERS if h in headers
-    )
+    security_present = sum(1 for h in SECURITY_HEADERS if h in headers)
 
     security_missing = len(SECURITY_HEADERS) - security_present
 
@@ -298,6 +297,7 @@ def print_response_statistics(scan):
         console.print(
             f"[bold]Response Time[/bold]            : {scan['response_time']:.3f} sec"
         )
+
 
 def print_findings_summary(scan):
     """Display findings summary."""
@@ -314,6 +314,7 @@ def print_findings_summary(scan):
     console.print(f"[yellow]MEDIUM[/yellow]   : {medium}")
     console.print(f"[blue]LOW[/blue]      : {low}")
     console.print(f"[bold]Total[/bold]    : {len(findings)}")
+
 
 def print_overall_assessment(scan):
     """Display overall assessment."""
@@ -335,9 +336,8 @@ def print_overall_assessment(scan):
     console.print(f"[bold]Overall Risk[/bold] : {risk}")
     console.print(f"[bold]Findings[/bold]     : {len(findings)}")
 
-    console.print(
-        "\nReview the findings above and implement the recommended fixes."
-    )
+    console.print("\nReview the findings above and implement the recommended fixes.")
+
 
 def print_end_of_scan(scan):
     """Print end-of-scan message."""
@@ -347,9 +347,7 @@ def print_end_of_scan(scan):
     console.print("[green]✔ Scan completed successfully.[/green]")
 
     if "duration" in scan:
-        console.print(
-            f"[bold]Duration[/bold] : {scan['duration']:.3f} sec"
-        )
+        console.print(f"[bold]Duration[/bold] : {scan['duration']:.3f} sec")
 
     console.print(f"[bold]Argus Version[/bold]  : {__version__}")
 
