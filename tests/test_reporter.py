@@ -1,9 +1,11 @@
-import os
 import json
-from argus_header.reporter import print_report
+import os
+
+from argus_header.reporter import build_json_report
 from argus_header.reporter import save_json as reporter_save_json
 
-def test_reporter_saves_json(tmp_path):
+
+def make_canonical_report():
     response_data = {
         "success": True,
         "url": "https://example.com",
@@ -13,6 +15,7 @@ def test_reporter_saves_json(tmp_path):
 
     findings = [
         {
+            "id": "SEC-001",
             "category": "Security",
             "issue": "Missing CSP",
             "severity": "HIGH",
@@ -21,10 +24,27 @@ def test_reporter_saves_json(tmp_path):
         }
     ]
 
+    score = {
+        "score": 80,
+        "grade": "B",
+        "risk_level": "HIGH",
+        "penalty": 20,
+    }
+
+    return build_json_report(
+        response_data,
+        findings,
+        score,
+        "test1234",
+        "https://example.com",
+    )
+
+
+def test_reporter_saves_json(tmp_path):
     file_path = tmp_path / "example.json"
 
-    # Save JSON report
-    reporter_save_json(response_data, findings, file_path)
+    # Save JSON report from the canonical report object
+    reporter_save_json(make_canonical_report(), str(file_path))
 
     assert os.path.exists(file_path)
 
@@ -35,4 +55,5 @@ def test_reporter_saves_json(tmp_path):
     assert data["scan"]["status"] == 200
     assert isinstance(data["findings"], list)
     assert data["schema_version"] == "0.7"
+    assert data["score"]["value"] == 80
     assert "timestamp" in data["scan"]

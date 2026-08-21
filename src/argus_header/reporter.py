@@ -1,5 +1,4 @@
 import json
-import uuid
 from datetime import datetime, timezone
 
 from rich.console import Console
@@ -7,8 +6,6 @@ from rich.panel import Panel
 from rich.table import Table
 
 from argus_header import APP_NAME, __version__
-
-from .scorer import calculate_score
 
 console = Console()
 
@@ -113,17 +110,8 @@ def print_report(response_data, findings, verbose=False):
         )
 
 
-def save_json(response_data, findings, filepath):
-    """Saves the report to a JSON file using the canonical v0.7 schema."""
-    report = build_json_report(
-        response_data,
-        findings,
-        calculate_score(findings),
-        uuid.uuid4().hex[:8],
-        response_data.get("url") or "",
-        method=response_data.get("method", "GET"),
-    )
-
+def save_json(report, filepath):
+    """Saves the canonical report dictionary to a JSON file."""
     try:
         with open(filepath, 'w') as f:
             json.dump(report, f, indent=4)
