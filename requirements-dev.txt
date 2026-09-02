@@ -5,3 +5,4 @@ pytest-cov
 ruff
 black
 mypy
+types-PyYAML
