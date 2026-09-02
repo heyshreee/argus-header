@@ -12,7 +12,7 @@ from .engine.policy import evaluate_gate
 from .models.report import ScoreData
 from .output.html_report import save_html
 from .output.json_report import load_report, render_json, save_report
-from .output.sarif import build_sarif, save_sarif
+from .output.sarif import build_sarif, render_sarif, save_sarif
 from .output.terminal import (
     print_ci_result,
     print_diff_result,
@@ -54,6 +54,7 @@ Examples:
   argus-header https://example.com --json report.json
   argus-header https://example.com --json            (stdout)
   argus-header https://example.com --sarif report.sarif
+  argus-header https://example.com --sarif          (stdout)
   argus-header https://example.com --report report.html
   argus-header https://example.com --config .argus.yml
   argus-header diff before.json after.json
@@ -115,8 +116,10 @@ Examples:
 
     parser.add_argument(
         "--sarif",
+        nargs="?",
+        const="-",
         metavar="FILE",
-        help="Write a SARIF 2.1.0 report.",
+        help="Write a SARIF 2.1.0 report (to FILE, or stdout when omitted).",
     )
 
     parser.add_argument(
@@ -273,7 +276,10 @@ def _handle_outputs(report, args) -> None:
 
     if args.sarif:
         sarif = build_sarif(report["findings"], report["scan"]["target"])
-        save_sarif(sarif, args.sarif)
+        if args.sarif == "-":
+            console.print(render_sarif(sarif))
+        else:
+            save_sarif(sarif, args.sarif)
 
     if args.report:
         save_html(report, args.report)
