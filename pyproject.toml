@@ -54,6 +54,9 @@ Homepage = "https://github.com/heyshreee/argus-header"
 Repository = "https://github.com/heyshreee/argus-header"
 Issues = "https://github.com/heyshreee/argus-header/issues"
 
+[project.optional-dependencies]
+api = ["fastapi", "uvicorn", "pydantic"]
+
 [project.scripts]
 argus-header = "argus_header.cli:main"
 

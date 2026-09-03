@@ -485,7 +485,16 @@ git clone https://github.com/heyshreee/argus-header.git
 cd argus-header
 ```
 
-Install the development version:
+### One-shot bootstrap (recommended)
+
+Creates `.venv`, installs the package (with its `[api]` extra) and all
+runtime + dev requirements, then runs tests and static checks to verify:
+
+```bash
+python bootstrap.py
+```
+
+### Manual setup
 
 ```bash
 python -m venv .venv
@@ -496,8 +505,8 @@ python -m venv .venv
 # Linux / macOS
 source .venv/bin/activate
 
-pip install -e .
-pip install -r requirements-dev.txt
+pip install -e ".[api]"
+pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 Run:

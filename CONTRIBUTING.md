@@ -11,6 +11,18 @@ git clone https://github.com/heyshreee/argus-header.git
 cd argus-header
 ```
 
+### Quick bootstrap (recommended)
+
+The one-shot installer creates a `.venv`, installs the package (with its
+`[api]` extra), all runtime and dev requirements, then runs the test suite
+and static checks:
+
+```bash
+python bootstrap.py
+```
+
+### Manual setup
+
 Create a virtual environment:
 
 ```bash
@@ -34,8 +46,8 @@ source .venv/bin/activate
 Install the package and development dependencies:
 
 ```bash
-pip install -e .
-pip install -r requirements-dev.txt
+pip install -e ".[api]"
+pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 `requirements-dev.txt` includes: `build`, `twine`, `pytest`, `pytest-cov`, `ruff`, `black`, `mypy`.

@@ -644,15 +644,27 @@ argus-header --version      # Argus Header 0.8.0
 
 ### From source
 
+#### One-shot bootstrap (recommended)
+
+Creates `.venv`, installs the editable package (with its `[api]` extra),
+runtime and dev requirements, then runs tests and static checks:
+
 ```bash
 git clone https://github.com/heyshreee/argus-header.git
 cd argus-header
+python bootstrap.py
+```
+
+#### Manual
+
+```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e .
+pip install -e ".[api]"
+pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 Runtime dependencies: `requests>=2.32.0`, `rich>=13.7.0`, `pyyaml>=6.0.0`.
-API extras (not yet declared in packaging): `fastapi`, `uvicorn`, `pydantic`.
+API extras (declared as `[project.optional-dependencies] api`): `fastapi`, `uvicorn`, `pydantic`.
 
 ---
 
@@ -862,7 +874,7 @@ Track these before calling any release production-ready:
 | ~~K1~~ | ~~Broken `src.argus.*` imports~~ | — | **Fixed in v0.7.0** (all modules/tests import `argus_header.*`) |
 | ~~K6~~ | ~~Verbose watchlist headers not covered by analyzer rules~~ | — | **Fixed in v0.8.0** (deep engine now covers Referrer-Policy, Permissions-Policy, COOP/COEP/CORP) |
 | ~~K7~~ | ~~`scan_time: "Now"` placeholder in JSON~~ | — | **Fixed in v0.7.0** (ISO-8601 UTC timestamps in canonical reports) |
-| K2 | `fastapi`, `uvicorn`, `pydantic` missing from `requirements.txt`/extras | `uvicorn api:app` crashes without manual install | Add `[project.optional-dependencies] api = [...]` |
+| ~~K2~~ | ~~API deps undeclared~~ | — | **Fixed in v0.8.0** (`[project.optional-dependencies] api` → `pip install -e ".[api]"`) |
 | K3 | Docker entrypoint runs `main.py` with no args → instant `exit 1` unless URL passed | Confusing first-run UX | Document arg passing or switch entrypoint to the CLI |
 | K4 | CORS `allow_origins=["*"]` combined with `allow_credentials=True` | Invalid/insecure combo; browsers reject credentialed wildcard | List explicit origins, drop credentials or wildcard |
 | K5 | Frontend hardcodes `http://127.0.0.1:8000` | Breaks when hosted elsewhere / over HTTPS (mixed content) | Derive base URL from `window.location` or config var |

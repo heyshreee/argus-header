@@ -144,7 +144,7 @@ Ordered by priority. **G1–G4 have been resolved (v0.7.0); the MVP is considere
 | Gap | Blocks | Work item |
 |---|---|---|
 | ~~**G1**~~ ~~Broken import paths~~ | ~~US4, US5, tests~~ | **Fixed in v0.7.0** (`argus_header.*` imports) |
-| ~~**G2**~~ ~~Missing API deps~~ | ~~US4, US5~~ | **Fixed in v0.7.0** (fastapi/uvicorn/pydantic used; see K2) |
+| ~~**G2**~~ ~~Missing API deps~~ | ~~US4, US5~~ | **Fixed in v0.8.0** (`[project.optional-dependencies] api = ["fastapi","uvicorn","pydantic"]`) |
 | **G3** Unsafe/invalid CORS (`*` origins + credentials=True); hardcoded frontend backend URL | US4 prod-readiness | Explicit origin allowlist; frontend derives base URL from config |
 | ~~**G4**~~ ~~Tests reference old paths & hit live network~~ | ~~Quality gate~~ | **Fixed in v0.7.0/v0.8.0** (imports fixed; network-based requester tests tagged integration) |
 | **G5** `--json` skipped for multi-URL scans | US3 | Emit `<prefix>-<host>.json` per target |
