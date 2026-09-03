@@ -6,9 +6,8 @@ Security fixes are applied to the latest stable release line only.
 
 | Version | Status | Supported |
 |---------|--------|-----------|
-| 0.7.x   | Latest stable release | ✅ |
-| 0.8.x   | In development (`feat/v0.8.0`) | ✅ (fixes land on main) |
-| < 0.7.0 | Historical | ❌ |
+| 0.8.x   | Latest stable release | ✅ |
+| < 0.8.0 | Historical | ❌ |
 
 ## Reporting a Vulnerability
 
@@ -42,7 +41,7 @@ You will be kept informed at every stage and credited in the fix's changelog ent
 
 **In scope**
 
-- The installed CLI and its report exports (JSON / Markdown / HTML rendering)
+- The installed CLI and its report exports (JSON / Markdown / HTML / SARIF rendering)
 - The FastAPI service (`api.py`) when exposed by an operator
 - The web dashboard under `frontend/`
 - Dependency and supply-chain issues affecting the published PyPI package `argus-header`

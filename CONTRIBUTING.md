@@ -50,7 +50,7 @@ Basic scan:
 argus-header https://example.com
 ```
 
-Security score and reports (v0.7.0):
+Security score and reports (v0.8.0):
 
 ```bash
 argus-header https://example.com --score
@@ -75,8 +75,9 @@ pytest tests/ --cov=src/argus_header --cov-report=term-missing
 
 Notes:
 
-- New analyzer rules need a matching test in `tests/test_analyzer.py`.
-- New scoring penalties need coverage in `tests/test_scorer.py`.
+- New analyzer rules need a matching test in `tests/test_analyzers.py` (v0.8 deep engine) or `tests/test_analyzer.py` (legacy).
+- New scoring penalties need coverage in `tests/test_scoring.py` (Score Engine 2.0) or `tests/test_scorer.py` (legacy).
+- New CI gate logic needs coverage in `tests/test_policy.py`; SARIF changes in `tests/test_sarif.py`; diff behavior in `tests/test_diff.py`.
 - Requester tests hit the live network (integration-style); don't be surprised if they take a few seconds.
 
 ---
@@ -102,8 +103,9 @@ mypy src/
 - Follow PEP 8; black handles formatting.
 - Keep functions small and focused.
 - Add comments only where logic is non-obvious.
-- Analyzer findings must carry a stable rule ID (`SEC-*`, `LEAK-*`, `CORS-*`, `PERF-*`, `COOKIE-*`) — never renumber existing IDs.
+- Analyzer findings must carry a stable rule ID (`ARGUS-*`, e.g. `ARGUS-CSP-001`, `ARGUS-HSTS-002`, `ARGUS-COOKIE-003`) — never renumber existing IDs.
 - Any new finding category needs an entry in the scorer's penalty table and in `docs/DOCUMENTATION.md` §6.
+- New rule families register in `src/argus_header/engine/rules.py` (`RULES`) and, when config-gated, in `models/configuration.py`.
 
 ---
 
@@ -134,7 +136,7 @@ release: v0.8.0
 ## Releases (maintainers)
 
 1. Bump the version in `pyproject.toml` and `src/argus_header/__init__.py`.
-2. Update `CHANGELOG.md`.
+2. Update `CHANGELOG.md` and `docs/DOCUMENTATION.md` version badge/header.
 3. Clean build: `rm -rf build dist && python -m build`
 4. Validate: `twine check dist/*`
 5. Tag: `git tag -a vX.Y.Z -m "Argus Header vX.Y.Z" && git push origin vX.Y.Z`

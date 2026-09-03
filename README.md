@@ -3,7 +3,7 @@
 > Fast, lightweight HTTP security header analyzer built for developers, security engineers, and penetration testers.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
-![Version](https://img.shields.io/badge/version-v0.7.0-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.8.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 Argus Header is a command-line tool that analyzes HTTP response headers and identifies common security misconfigurations, information leakage, and HTTP security best-practice issues. It scores each target from 0–100 with a letter grade and exports reports as JSON, Markdown, or HTML.
@@ -68,11 +68,15 @@ Analyzes:
 
 - Rich CLI output
 - Detailed `--verbose` mode
-- JSON report export (enhanced v0.7 schema)
+- JSON report export (enhanced v0.8 schema)
+- SARIF 2.1.0 report export
 - Markdown report export
 - HTML report export (self-contained, escaped)
+- Cyberpunk-style HTML report export (`--report`)
 - Severity levels
 - Security recommendations
+- CI/CD gating (`--fail-on`, `--min-score`)
+- YAML configuration support (`--config`)
 
 ---
 
@@ -115,7 +119,7 @@ argus-header --version
 Expected output:
 
 ```text
-Argus Header 0.7.0
+Argus Header 0.8.0
 ```
 
 ---
@@ -222,6 +226,38 @@ argus-header https://example.com \
     --html report.html
 ```
 
+Export SARIF Report
+
+```bash
+argus-header https://example.com --sarif report.sarif
+argus-header https://example.com --sarif          # stdout
+```
+
+Export Cyberpunk-style HTML Report
+
+```bash
+argus-header https://example.com --report report.html
+```
+
+CI/CD Gating
+
+```bash
+argus-header https://example.com --fail-on high
+argus-header https://example.com --min-score 80
+```
+
+YAML Configuration
+
+```bash
+argus-header https://example.com --config .argus.yml
+```
+
+Compare Two Reports
+
+```bash
+argus-header diff before.json after.json
+```
+
 Display Version
 
 ```bash
@@ -243,11 +279,17 @@ argus-header --help
 | `--method` | HTTP Method (GET / HEAD) |
 | `--timeout` | Request timeout |
 | `--parallel` | Scan multiple URLs concurrently |
-| `--json FILE` | Save report as JSON (v0.7 enhanced schema) |
-| `--score` | Display the security score and grade |
+| `--config FILE` | Load a .argus.yml configuration file |
+| `--json [FILE]` | Save report as JSON (v0.8 schema); stdout when FILE omitted |
+| `--sarif [FILE]` | Save a SARIF 2.1.0 report; stdout when FILE omitted |
+| `--report FILE` | Save a cyberpunk-style HTML security report |
+| `--score` | Display the Security Score 2.0 breakdown and grade |
+| `--fail-on` | CI mode: fail the build on findings at/above severity (critical/high/medium/low/none) |
+| `--min-score N` | CI mode: fail the build when the score is below N |
 | `--markdown FILE` | Save a Markdown security report |
-| `--html FILE` | Save an HTML security report |
+| `--html FILE` | Save a legacy HTML security report |
 | `--no-redirect` | Disable redirect following |
+| `diff` | Compare two JSON reports (`argus-header diff before.json after.json`) |
 | `--verbose` | Display detailed scan report |
 | `--version` | Display tool version |
 | `--help` | Show help information |
@@ -265,10 +307,13 @@ $ argus-header https://example.com --score
 /_/ |_/_/  \_, /\_,_/___/___/___/  
             /_/                    
 
+ ARGUS-HEADER v0.8.0
+ DEEP SECURITY ANALYSIS
+
  Argus Header
  HTTP Header Security Analyzer
 
-Version: 0.7.0
+Version: 0.8.0
 
 ╭──────── Scan Summary ────────╮
 │ Target: https://example.com/ │
@@ -301,45 +346,32 @@ Version: 0.7.0
 └──────────────┴───────────────────────────┴───────────────────────────┴───────────────────────────┘
 
 Tip: Run with --verbose to view detailed scan information.
-╭─ Security Score ─╮
-│ Score: 27/100    │
-│ Grade: F         │
-│ Risk: HIGH       │
-│ Penalty: 73      │
-╰──────────────────╯
+╭─ Security Score 2.0 ─────────────╮
+│ Overall: 27/100          Grade F │
+│ Content:    4/25                 │
+│ Transport:  0/20                 │
+│ Browser:    4/25                 │
+│ Isolation:  10/15                │
+│ Cookies:    8/15                 │
+│ Risk: HIGH                       │
+╰──────────────────────────────────╯
 ```
 
 ---
 
 # 🔐 Security Analysis
 
-## Security Headers
+The v0.8 engine runs **9 rule families** over the response headers:
 
-Checks for:
-
-- Content-Security-Policy
-- Strict-Transport-Security
-- X-Frame-Options
-- X-Content-Type-Options
-
-## Information Leakage
-
-Checks for:
-
-- Server
-- X-Powered-By
-
-## CORS
-
-Checks for:
-
-- Wildcard Access-Control-Allow-Origin
-
-## Performance
-
-Checks for:
-
+- Content-Security-Policy (CSP)
+- Cross-Origin Resource Sharing (CORS)
+- Cookies (Secure, HttpOnly, SameSite, domain/path)
+- HTTP Strict Transport Security (HSTS)
 - Cache-Control
+- Cross-Origin Policies (COOP / COEP / CORP)
+- Referrer-Policy
+- Permissions-Policy
+- Base Security Headers (X-Frame-Options, X-Content-Type-Options, Server/X-Powered-By leaks)
 
 ---
 
@@ -352,17 +384,37 @@ src/
 └── argus_header/
     ├── __init__.py
     ├── __main__.py
-    ├── analyzer.py        # rule engine with stable rule IDs
-    ├── cookies.py         # Set-Cookie attribute analysis
-    ├── scorer.py          # security score / grade engine
-    ├── cli.py             # argument parsing & orchestration
-    ├── reporter.py        # terminal output + canonical report + JSON export
-    ├── markdown.py        # Markdown report renderer
-    ├── html_report.py     # HTML report renderer
-    ├── requester.py       # HTTP fetch engine (retries, redirects)
-    ├── schemas.py         # Pydantic models for the API layer
-    ├── utils.py           # URL normalization
-    └── verbose.py         # 15-section detailed report
+    ├── cli.py                # argument parsing & orchestration (v0.8)
+    ├── scanner.py            # v0.8 scan pipeline
+    ├── config_loader.py      # YAML config (.argus.yml)
+    ├── requester.py          # HTTP fetch engine (retries, redirects)
+    ├── analyzer.py           # legacy rule engine
+    ├── cookies.py            # legacy Set-Cookie analysis
+    ├── scorer.py             # legacy score / grade engine
+    ├── reporter.py           # legacy terminal output
+    ├── markdown.py           # Markdown report renderer
+    ├── html_report.py        # legacy HTML report renderer
+    ├── verbose.py            # 15-section detailed report
+    ├── schemas.py            # Pydantic models for the API layer
+    ├── utils.py              # URL normalization
+    ├── engine/               # rules engine + scoring
+    │   ├── rules.py          # rule registration & orchestration
+    │   ├── findings.py       # structured finding model
+    │   ├── policy.py         # CI/CD gate evaluation
+    │   ├── scoring.py        # Security Score 2.0
+    │   └── references.py     # reference documentation links
+    ├── analyzers/            # per-header deep analyzers
+    │   ├── csp.py  cors.py  cookies.py  hsts.py  cache.py
+    │   ├── cross_origin.py  referrer.py  permissions.py
+    │   └── base_headers.py
+    ├── output/               # report renderers
+    │   ├── json_report.py    # JSON 0.8 renderer
+    │   ├── sarif.py          # SARIF 2.1.0 renderer
+    │   ├── html_report.py    # cyberpunk HTML renderer
+    │   └── terminal.py       # Rich terminal output
+    ├── diff/                 # scan report comparison
+    │   └── scanner_diff.py
+    └── models/               # dataclasses (finding, report, config)
 
 api.py                     # FastAPI service (GET/POST /analyze)
 frontend/                  # vanilla JS dashboard with score panel & exports
@@ -380,35 +432,30 @@ pyproject.toml
 
 # 🗺️ Roadmap
 
-## ✅ v0.7.0 — Current Release
+## ✅ v0.8.0 — Current Release
 
 ### Added
 
-- Security Score (0–100) and Grade (A–F)
-- Risk level and penalty breakdown
-- Cookie analysis: Secure, HttpOnly, SameSite
-- Stable rule IDs for findings
-- Enhanced JSON reports with scan metadata
-- Markdown report export (`--markdown`)
-- HTML report export (`--html`)
-- CLI `--score` option
-- API score/grade/summary exposure
-- Dashboard score panel and finding summaries
+- Deep security rules engine (9 rule families)
+- Security Score Engine 2.0 with A+ grades
+- YAML configuration support (`--config .argus.yml`)
+- SARIF 2.1.0 report export (`--sarif`)
+- Cyberpunk-style HTML report export (`--report`)
+- `diff` command for comparing two scan reports
+- CI/CD gating via `--fail-on` and `--min-score`
+- JSON / SARIF stdout output
+- Expanded test coverage
+
+### Changed
+
+- Rewrote CLI for the v0.8 scan pipeline
+- Rewrote output renderers and analyzer layer
+- New `engine/`, `analyzers/`, `output/`, `diff/`, `models/` package structure
+- Added CRITICAL severity level
 
 ---
 
-## 🚀 v0.8.0 — Next
-
-Planned features:
-
-- Expanded unit test coverage (CLI / verbose rendering)
-- GitHub Actions CI
-- Documentation improvements
-- Architecture improvements
-
----
-
-## 🚀 v0.9.0
+## 🚀 v0.9.0 — Next
 
 Planned features:
 

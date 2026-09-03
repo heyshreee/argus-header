@@ -1,9 +1,9 @@
 # 🛡️ Argus Header — Complete Technical Documentation
 
-> **Version:** 0.7.0 · **Language:** Python ≥ 3.9 · **License:** MIT
+> **Version:** 0.8.0 · **Language:** Python ≥ 3.9 · **License:** MIT
 > **Author:** Sriram ( [@heyshreee](https://github.com/heyshreee) )
 
-Argus Header is a fast, lightweight **HTTP security header analyzer**. It sends an HTTP request to one or more target URLs, inspects the response headers, and reports security misconfigurations, information leakage, CORS issues, and performance concerns — via a Rich CLI, a verbose report, a JSON export, a REST API, and a web dashboard.
+Argus Header is a fast, lightweight **HTTP security header analyzer**. It sends an HTTP request to one or more target URLs, inspects the response headers, and reports security misconfigurations, information leakage, CORS issues, and performance concerns — via a Rich CLI, a SARIF/JSON/HTML export, a REST API, and a web dashboard.
 
 ---
 
@@ -46,18 +46,22 @@ Argus Header automates header auditing:
 | **REST API** | `api.py` (FastAPI) | Integrations, automation |
 | **Web UI** | `frontend/index.html` | Non-technical users |
 
-### Key Capabilities (v0.7.0)
+### Key Capabilities (v0.8.0)
 
 - GET & HEAD requests, configurable timeout
 - Automatic redirect following (optional) with retry/backoff on transient failures
 - Single or multiple targets, optional parallel scanning (`ThreadPoolExecutor`, 5 workers)
-- Severity-ranked findings with risk explanation + concrete fix recommendation
-- Stable rule IDs on every finding (`SEC-001`, `LEAK-002`, `COOKIE-003`, …)
-- Security Score (0–100), Grade (A–F), risk level and penalty breakdown
-- Cookie security analysis (Secure / HttpOnly / SameSite)
-- Enhanced JSON reports with scan metadata and ISO timestamps
+- Deep security rules engine covering 9 rule families (CSP, CORS, Cookies, HSTS, Cache, Cross-Origin, Referrer, Permissions, Base Headers)
+- Stable rule IDs on every finding (`ARGUS-CSP-*`, `ARGUS-HSTS-*`, `ARGUS-COOKIE-*`, …)
+- Security Score Engine 2.0 (weighted, category-aware, 0–100, grade A+ down to F)
+- YAML configuration (`.argus.yml`) via `--config`
+- CI/CD gating via `--fail-on` and `--min-score`
+- SARIF 2.1.0 report export (`--sarif`)
+- Cyberpunk-style HTML report export (`--report`)
+- `diff` command to compare two scan reports
+- JSON / SARIF output to stdout
 - Markdown report export (`--markdown`)
-- HTML report export (`--html`, self-contained and XSS-escaped)
+- Legacy HTML report export (`--html`)
 - `--verbose` deep-dive report (15 sections)
 - URL normalization (`example.com` → `https://example.com`)
 
@@ -101,46 +105,58 @@ argus-header/
 │   └── argus_header/          # Installable package (PyPI: argus-header)
 │       ├── __init__.py        # Exports __version__, APP_NAME
 │       ├── __main__.py        # python -m argus_header entry point
-│       ├── cli.py             # Argument parsing, banner, orchestration
+│       ├── cli.py             # Argument parsing, banner, orchestration (v0.8)
+│       ├── scanner.py         # v0.8 scan pipeline (rules + scoring + report)
+│       ├── config_loader.py   # .argus.yml YAML configuration loader
 │       ├── requester.py       # HTTP fetch engine (requests + retry)
-│       ├── analyzer.py        # Security analysis rule engine (+ rule IDs)
-│       ├── cookies.py         # Set-Cookie attribute analysis (v0.7)
-│       ├── scorer.py          # Score / grade / risk engine (v0.7)
-│       ├── reporter.py        # Rich output, canonical report, JSON export
-│       ├── markdown.py        # Markdown report renderer (v0.7)
-│       ├── html_report.py     # HTML report renderer (v0.7)
+│       ├── engine/            # Rules engine + scoring
+│       │   ├── rules.py       # Rule registration & orchestration
+│       │   ├── findings.py    # Structured finding model (Finding, as_dicts)
+│       │   ├── policy.py      # CI/CD gate evaluation (--fail-on / --min-score)
+│       │   ├── scoring.py     # Security Score Engine 2.0
+│       │   └── references.py  # Reference documentation links
+│       ├── analyzers/         # Per-header deep analyzers
+│       │   ├── csp.py  cors.py  cookies.py  hsts.py  cache.py
+│       │   ├── cross_origin.py  referrer.py  permissions.py
+│       │   └── base_headers.py
+│       ├── output/            # Report renderers
+│       │   ├── json_report.py # JSON 0.8 renderer / loader
+│       │   ├── sarif.py       # SARIF 2.1.0 renderer
+│       │   ├── html_report.py # Cyberpunk-style HTML renderer
+│       │   └── terminal.py    # Rich terminal output
+│       ├── diff/              # Scan report comparison
+│       │   └── scanner_diff.py
+│       ├── models/            # Dataclasses (finding, report, configuration)
 │       ├── verbose.py         # 15-section detailed report
 │       ├── schemas.py         # Pydantic models for the API
 │       └── utils.py           # URL normalization helper
 ├── api.py                     # FastAPI wrapper (GET/POST /analyze)
 ├── main.py                    # Legacy standalone runner (report/ dir output)
-├── frontend/                  # Vanilla JS dashboard (Tailwind CDN)
-│   ├── index.html
-│   ├── script.js
-│   └── style.css
+├── frontend/                  # Vanilla JS dashboard
 ├── tests/                     # pytest suites
 ├── Dockerfile                 # python:3.11-slim, ENTRYPOINT python main.py
 ├── pyproject.toml             # Packaging metadata (setuptools, src layout)
-├── requirements.txt           # Runtime deps: requests, rich
+├── requirements.txt           # Runtime deps: requests, rich, pyyaml
 ├── requirements-dev.txt       # build, twine, pytest, pytest-cov, ruff, black, mypy
 └── docs/                      # This documentation + MVP spec
 ```
 
-### v0.7.0 Data Flow
+### v0.8.0 Data Flow
 
-All presentation surfaces consume **one canonical report dictionary**:
+All presentation surfaces consume **one canonical report dictionary** built by `output.json_report.build_report()`:
 
 ```text
-HTTP response → analyzer → findings[] ─┬─→ scorer → score{}
-                                       │
-                 build_json_report() ◄─┘  (scan metadata + summary)
-                        │
-        ┌───────────────┼────────────────┐
-        ▼               ▼                ▼
-   save_json()    render_markdown()  render_html()
-   (--json)        (--markdown)       (--html)
+HTTP response → fetch_headers → deep rules engine → findings[]
+                                      │
+                 calculate_score_2() ◄┘  (category-aware)
+                         │
+                  build_report()  (scan metadata + summary)
+                         │
+        ┌───────────────┼────────────────┐──────────────┐
+        ▼               ▼                ▼              ▼
+   save_report()   save_sarif()      save_html()   render_terminal()
+   (--json)         (--sarif)        (--report)     (terminal / CI)
         └───────────────┴────────────────┘
-                        │
               CLI terminal / API / dashboard
 ```
 
@@ -151,20 +167,23 @@ HTTP response → analyzer → findings[] ─┬─→ scorer → score{}
 ### CLI scan
 
 ```text
-argus-header https://example.com --verbose --json out.json
+argus-header https://example.com --score --json out.json
         │
         ▼
 cli.main()
   ├─ argparse parses flags
+  ├─ load_config(args.config)           (optional .argus.yml)
   ├─ print_banner()
-  ├─ scan_target(url, args)            [looped, or ThreadPool if --parallel]
-  │    ├─ utils.normalize_url()         → "https://example.com"
-  │    ├─ requester.fetch_headers()     → response_data dict  (or error dict)
-  │    ├─ analyzer.analyze_headers()    → findings list
-  │    ├─ reporter.print_report()       → Rich panel + severity-sorted table
-  │    ├─ verbose.print_verbose(scan)   → (only if --verbose) 15 sections
-  │    └─ build_json_report() → save_json()/save_markdown()/save_html()
-  │                            (single-URL scans with --json/--markdown/--html)
+  ├─ scan_targets(args)
+  │    └─ scan_target(url, method, follow_redirects, timeout, config)
+  │         ├─ requester.fetch_headers() → response_data dict
+  │         ├─ engine.rules.run_rules()  → findings list (9 rule families)
+  │         ├─ engine.scoring.calculate_score_2() → ScoreData
+  │         ├─ output.json_report.build_report()  → canonical v0.8 report
+  │         └─ returns report dict
+  ├─ _present_report()                    → Rich Scan Summary + findings table
+  ├─ _handle_outputs()                    → --json/--sarif/--report/--html/--markdown
+  └─ CI gate: evaluate_gate() + print_ci_result()  (--fail-on / --min-score)
   └─ exit codes: 0 ok · 130 Ctrl-C · 1 unexpected error
 ```
 
@@ -230,20 +249,31 @@ Each finding is a dict with five keys:
 
 If the request failed (`success == False`), the analyzer returns `[]`.
 
-### 4.3 `score{}` — produced by `scorer.calculate_score(findings)`
+### 4.3 `ScoreData` — produced by `engine.scoring.calculate_score_2()`
+
+Security Score Engine 2.0 is **category-aware** and weighted across 5 categories that sum to 100:
 
 ```python
-{
-    "score": int,            # 0-100, floor at 0: max(0, 100 - penalty)
-    "grade": "A"|"B"|"C"|"D"|"F",
-    "risk_level": "HIGH" | "MEDIUM" | "LOW",
-    "total_findings": int,
-    "penalty": int,
-    "breakdown": {"HIGH": int, "MEDIUM": int, "LOW": int},
-}
+ScoreData(
+    score=78,                 # 0-100, sum of surviving category scores
+    grade="B",                # from A+ down to F
+    risk_level="HIGH",        # worst severity present (CRITICAL/HIGH/MEDIUM/LOW)
+    penalty=total_deduction,  # aggregate points deducted
+    total_findings=int,
+    categories={              # per-category surviving points
+        "Content": 18, "Transport": 20, "Browser": 16,
+        "Isolation": 10, "Cookies": 8,
+    },
+    max_per_category=25,
+    breakdown={"CRITICAL": 0, "HIGH": 3, "MEDIUM": 2, "LOW": 1},
+    weights={"Content": 25, "Transport": 20, "Browser": 25,
+             "Isolation": 15, "Cookies": 15},
+)
 ```
 
-Grades: `≥90 A · ≥80 B · ≥70 C · ≥60 D · else F`. Risk level mirrors the highest finding severity present.
+Category budgets: `Content 25 · Transport 20 · Browser 25 · Isolation 15 · Cookies 15`. Per-finding deductions: CRITICAL 9 · HIGH 7 · MEDIUM 4 · LOW 1. Each finding classifies into one category; scores floor at 0.
+
+Grades: `≥98 A+ · ≥90 A · ≥80 B · ≥70 C · ≥60 D · else F`. Risk level mirrors the highest finding severity present.
 
 ### 4.4 `scan` dict — assembled by `cli.scan_target()` for verbose mode
 
@@ -273,64 +303,90 @@ Grades: `≥90 A · ≥80 B · ≥70 C · ≥60 D · else F`. Risk level mirrors
 - Sends the request with `User-Agent: HeaderScan-Tool/1.0`.
 - Maps exceptions to friendly error strings: `Timeout`, `SSLError`, `ConnectionError`, `TooManyRedirects`, `MissingSchema`, `InvalidURL`, generic `RequestException`. **Never raises** — always returns a dict.
 
-### 5.2 `src/argus_header/analyzer.py`
+### 5.2 `src/argus_header/engine/rules.py` (rules engine)
 
-`analyze_headers(headers_data) → list[dict]`
+`run_rules(headers, config=None) → list[dict]`
 
-Pure function; lowercases all header keys before evaluation. Every finding carries a stable rule ID. Rule groups executed in order:
+- Normalizes header names to lowercase via `normalize_headers`.
+- Executes every enabled rule family (see `RULES`), skipping any disabled by config.
+- Aggregates findings from all analyzers into a flattened list of dicts.
+- Each fallback-safe family is wrapped so a single analyzer failure degrades gracefully (logged, skipped).
 
-1. **Security** — CSP (`SEC-001`), HSTS (`SEC-002`), X-Frame-Options (`SEC-003`, skipped when CSP present), X-Content-Type-Options (`SEC-004`)
-2. **Leakage** — Server (`LEAK-001`, flags actual leaked value), X-Powered-By (`LEAK-002`)
-3. **CORS** — wildcard `Access-Control-Allow-Origin: *` (`CORS-001`)
-4. **Performance** — missing Cache-Control (`PERF-001`)
-5. **Cookies** — delegates to `cookies.analyze_cookies()` (`COOKIE-001..003`)
+Rule families registered in `RULES`:
 
-See §6 for the full catalog.
+| key | Analyzer | Focus |
+|---|---|---|
+| `csp` | `analyze_csp` | CSP directive analysis |
+| `cors` | `analyze_cors` | CORS configuration |
+| `cookies` | `analyze_cookies` | Cookie attribute security |
+| `hsts` | `analyze_hsts` | HSTS configuration |
+| `cache` | `analyze_cache` | Cache header policy |
+| `cross_origin` | `analyze_cross_origin` | COOP / CORP / COEP |
+| `referrer` | `analyze_referrer` | Referrer-Policy value |
+| `permissions` | `analyze_permissions` | Permissions-Policy |
+| `base_headers` | `analyze_base_headers` | XFO, XCTO, Server / X-Powered-By leaks |
 
-### 5.3 `src/argus_header/cookies.py`
+### 5.3 `src/argus_header/analyzers/*.py` (deep analyzers)
 
-`analyze_cookies(headers) → list[dict]`
+Each module exposes a pure `analyze_*` function taking a lowercased header dict and returning a list of structured findings. Highlights:
 
-- Collects every `Set-Cookie` header (single or joined).
-- Parses `name=value` plus attributes case-insensitively.
-- Emits findings: missing **Secure** (`COOKIE-001`, MEDIUM), missing **HttpOnly** (`COOKIE-002`, MEDIUM), missing **SameSite** (`COOKIE-003`, LOW).
-- A fully attributed cookie produces no findings.
+- **csp.py — `analyze_csp`**: verifies `Content-Security-Policy` presence, parses directives, warns about missing/insecure directives (`unsafe-inline`, `unsafe-eval`, base-uri), flags weak `frame-ancestors`.
+- **hsts.py — `analyze_hsts`**: checks presence, parses `max-age`, `includeSubDomains`, `preload`, flags missing or too-short max-age, missing includeSubDomains.
+- **cors.py — `analyze_cors`**: flags wildcard `*` origins, unsafe reflections, missing `Access-Control-Allow-Origin`.
+- **cookies.py — `analyze_cookies`**: per-cookie `Secure`/`HttpOnly`/`SameSite`/`domain` checks.
+- **cache.py — `analyze_cache`**: missing `Cache-Control`, `no-store` variance, over-long max-age for sensitive content.
+- **cross_origin.py — `analyze_cross_origin`**: COOP / CORP / COEP presence and values.
+- **referrer.py — `analyze_referrer`**: `Referrer-Policy` presence and value safety.
+- **permissions.py — `analyze_permissions`**: `Permissions-Policy` presence and defaults.
+- **base_headers.py — `analyze_base_headers`**: X-Frame-Options, X-Content-Type-Options, Server / X-Powered-By leaks.
 
-### 5.4 `src/argus_header/scorer.py`
-
-Scoring engine — three pure functions over the findings list:
+### 5.4 `src/argus_header/engine/scoring.py` (Score Engine 2.0)
 
 | Function | Returns |
 |---|---|
-| `calculate_score(findings)` | `{score, grade, risk_level, total_findings, penalty, breakdown}` |
-| `calculate_grade(score)` | `"A"…​"F"` (≥90 A · ≥80 B · ≥70 C · ≥60 D · else F) |
-| `calculate_risk_level(findings)` | highest severity present, else `"LOW"` |
+| `calculate_score_2(findings)` | `ScoreData` with aggregate score, category breakdown, grade, risk |
+| `classify_finding(finding)` | scoring category (`Content`/`Transport`/`Browser`/`Isolation`/`Cookies`) |
+| `calculate_grade_extended(score)` | grade from `"A+"` down to `"F"` (≥98 A+ · ≥90 A · ≥80 B · ≥70 C · ≥60 D · else F) |
+| `calculate_risk_level_from_counts(counts)` | worst severity present, else `"LOW"` |
+| `max_severity(findings)` | most severe finding level present |
 
-Penalty model (`PENALTIES` keyed by rule ID): CSP −20 · HSTS −20 · XFO −15 · XCTO −10 · X-Powered-By −8 · wildcard CORS −12 · Server −5 · Cache-Control −3 · cookie Secure −10 · HttpOnly −10 · SameSite −5. `score = max(0, 100 - penalty)`.
+Category budgets: `Content 25 · Transport 20 · Browser 25 · Isolation 15 · Cookies 15` (sum = 100). Severity deductions per finding: CRITICAL 9 · HIGH 7 · MEDIUM 4 · LOW 1. Category scores floor at 0; the overall score is the sum of surviving category scores.
 
-### 5.5 `src/argus_header/reporter.py`
+### 5.5 `src/argus_header/engine/policy.py` (CI/CD gate)
 
-- `print_report(response_data, findings, verbose=False)` — renders:
-  - Error line when `success == False`
-  - **Scan Summary** panel (target, status, header count)
-  - **Analysis Findings** table sorted HIGH → MEDIUM → LOW with color-coded severities (red/yellow/blue) and a Rule column
-  - Green *"No significant issues found!"* when clean; tip hint otherwise.
-- `build_json_report(response_data, findings, score=None)` — assembles the canonical v0.7 report dict (§12): tool metadata, scan metadata (ID/target/final URL/ISO timestamp/duration/method/status), score block, summary counts, headers, findings.
-- `save_json(report, filepath)` — writes the report dict with indent 4; friendly error on I/O failure.
+`evaluate_gate(score, findings, fail_on="none", minimum_score=0) → GateResult`
 
-### 5.6 `src/argus_header/markdown.py`
+- Fails when any finding exists at `fail_on` severity (or worse) using `SEVERITY_THRESHOLD`.
+- Fails when the score is below `minimum_score` (default 80).
+- Used by `--fail-on` and `--min-score` CLI flags.
 
-`render_markdown(report) → str` / `save_markdown(report, filepath)`
+### 5.6 `src/argus_header/output/` (report renderers)
 
-Renders the canonical report: title with target, score line (**NN / 100 — Grade X**), summary table, findings grouped by severity with Rule IDs and Risk/Fix, response headers table.
+| Module | Function | Output |
+|---|---|---|
+| `json_report.py` | `build_report(...)`, `render_json()`, `save_report()`, `load_report()` | Canonical v0.8 JSON report; load for `diff` |
+| `sarif.py` | `build_sarif()`, `render_sarif()`, `save_sarif()` | SARIF 2.1.0 report |
+| `html_report.py` | `render_html()`, `save_html()` | Cyberpunk-style self-contained HTML report |
+| `terminal.py` | `print_findings_professional`, `print_score_breakdown`, `print_ci_result`, `print_diff_result` | Rich terminal output |
 
-### 5.7 `src/argus_header/html_report.py`
+### 5.7 `src/argus_header/diff/scanner_diff.py`
 
-`render_html(report) → str` / `save_html(report, filepath)`
+`scan_diff(before_report, after_report) → DiffResult`
 
-Self-contained styled document (no external assets). All dynamic values pass through `html.escape()` before interpolation — untrusted header values cannot inject markup.
+- Loads two JSON reports (`load_report` in `output.json_report`).
+- Compares score, per-category scores, finding counts and severity changes.
+- `print_diff_result()` (in `output.terminal`) renders the comparison.
+- Invoked via `argus-header diff before.json after.json`.
 
-### 5.8 `src/argus_header/verbose.py`
+### 5.8 `src/argus_header/config_loader.py`
+
+`load_config(path) → Configuration | None`
+
+- Loads a `.argus.yml` YAML configuration file.
+- Maps to a typed `Configuration` object (method, timeout, redirects, rules gating, policy fail_on / minimum_score).
+- Returns `None` when no path is given.
+
+### 5.9 `src/argus_header/verbose.py`
 
 `print_verbose(scan)` orchestrates 15 renderers, in order:
 
@@ -348,22 +404,28 @@ Self-contained styled document (no external assets). All dynamic values pass thr
 | 10 | Present Security Headers | green list with values |
 | 11 | Information Leakage | Server, X-Powered-By, Via, X-AspNet-Version, X-Runtime |
 | 12 | Response Statistics | totals of received/present/missing headers |
-| 13 | Findings Summary | HIGH/MEDIUM/LOW counts |
-| 14 | Overall Assessment | overall risk = HIGH if any HIGH finding, else MEDIUM if any MEDIUM, else LOW |
+| 13 | Findings Summary | CRITICAL/HIGH/MEDIUM/LOW counts |
+| 14 | Overall Assessment | overall risk = worst severity present |
 | 15 | End of Scan | completion message, duration, version |
 
-Watchlist constant `SECURITY_HEADERS`: Content-Security-Policy, Strict-Transport-Security, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy, Cross-Origin-Embedder-Policy, Cross-Origin-Resource-Policy.
-
-### 5.9 `src/argus_header/cli.py`
+### 5.10 `src/argus_header/cli.py`
 
 - Defines the ASCII banner and `--version`.
-- `scan_target(url, args)` builds the `scan` dict, runs the analyzer, computes the score when enabled, assembles one canonical report via `build_json_report()`, then drives terminal output and every export (`--json`, `--markdown`, `--html`).
-- `main()` argument parsing (§7), then:
+- `scan_targets(args)` loads config, resolves method/timeout/redirects/fail_on/min_score, runs the v0.8 scan pipeline via `scan_target()`, presents reports, writes every requested export, and evaluates the CI gate.
+- `run_diff(argv)` implements `argus-header diff <before.json> <after.json>`.
+- `main()` argument parsing (§7):
+  - `diff` subcommand → `run_diff`
   - `--parallel` + >1 URL → `ThreadPoolExecutor(max_workers=5)`
-  - otherwise sequential with `console.rule()` separators
+  - otherwise sequential
 - Handles `KeyboardInterrupt` (exit 130) and top-level exceptions (exit 1).
 
-### 5.10 `src/argus_header/schemas.py` (API layer)
+### 5.11 `src/argus_header/scanner.py`
+
+`scan_target(target, method, follow_redirects, timeout, config) → dict`
+
+High-level v0.8 pipeline: fetch headers → run rules → score → build canonical report. On fetch failure returns an error report with `error` populated.
+
+### 5.12 `src/argus_header/schemas.py` (API layer)
 
 Pydantic v2 models used only by `api.py`:
 
@@ -377,11 +439,11 @@ class AnalyzeResponse(BaseModel): url:str; status:int; headers:Dict[str,str];
                                   summary:AnalysisSummary; timing:Dict[str,float]
 ```
 
-### 5.11 `src/argus_header/utils.py`
+### 5.13 `src/argus_header/utils.py`
 
 `normalize_url(url)` — prepends `https://` when no scheme is present; otherwise returns input unchanged.
 
-### 5.12 `api.py` — FastAPI service
+### 5.14 `api.py` — FastAPI service
 
 - CORS middleware: origins `*`, methods `*`, headers `*`, `allow_credentials=True`.
 - `GET /analyze?url=...` and `POST /analyze` (body `{"url": "..."}` validated by `AnalyzeRequest`).
@@ -397,27 +459,43 @@ Fetch → analyze → print → saves `report/<hostname>.json`. Superseded by th
 
 ## 6. Detection Rules Catalog
 
-| Rule ID | Category | Trigger condition | Severity | Risk reported | Fix recommended |
-|---|---|---|---|---|---|
-| `SEC-001` | Security | No `Content-Security-Policy` | **HIGH** | XSS easier to exploit | Define allowed content sources via CSP |
-| `SEC-002` | Security | No `Strict-Transport-Security` | **HIGH** | MITM protocol-downgrade attacks | `max-age=63072000; includeSubDomains` |
-| `SEC-003` | Security | No `X-Frame-Options` **and** no CSP | **HIGH** | Clickjacking | `DENY` or `SAMEORIGIN` |
-| `SEC-004` | Security | No `X-Content-Type-Options` | MEDIUM | MIME-sniffing → XSS | `nosniff` |
-| `LEAK-001` | Leakage | `Server` present | LOW | Tech fingerprinting → CVE verification | Suppress/obfuscate header |
-| `LEAK-002` | Leakage | `X-Powered-By` present | MEDIUM | Framework/version disclosure | Remove from server config |
-| `CORS-001` | CORS | `Access-Control-Allow-Origin: *` | MEDIUM | Any origin can read resources (dangerous with auth) | Restrict to trusted domains |
-| `PERF-001` | Performance | No `Cache-Control` | LOW | Inefficient browser caching | e.g. `max-age=3600` |
-| `COOKIE-001` | Cookie | `Set-Cookie` without `Secure` | MEDIUM | Cookie sent over plaintext HTTP | Add the `Secure` attribute |
-| `COOKIE-002` | Cookie | `Set-Cookie` without `HttpOnly` | MEDIUM | Readable by injected JavaScript (XSS) | Add the `HttpOnly` attribute |
-| `COOKIE-003` | Cookie | `Set-Cookie` without `SameSite` | LOW | CSRF exposure | Add `SameSite=Lax` or `Strict` |
+Findings in v0.8 carry stable `ARGUS-*` rule IDs grouped by rule family. The catalog below lists representative triggers; each analyzer may emit multiple rules per header.
 
-Score penalties per finding are listed in §5.4.
+| Rule ID | Family | Trigger condition (summary) | Severity | Risk reported | Fix recommended |
+|---|---|---|---|---|---|
+| `ARGUS-CSP-001` | CSP | No `Content-Security-Policy` | **CRITICAL** | XSS easier to exploit | Define allowed content sources via CSP |
+| `ARGUS-CSP-002` | CSP | CSP too weak / no `default-src` | **HIGH** | Weak policy allows XSS | Tighten directives, add `default-src` |
+| `ARGUS-CSP-003..006` | CSP | wildcard / unsafe-inline / unsafe-eval / http: in `default-src` | HIGH | Insecure source list | Restrict sources |
+| `ARGUS-CSP-101..104` | CSP | weak `script-src` (wildcard/unsafe-inline/unsafe-eval/http:) | **HIGH** | Script injection risk | Restrict script sources |
+| `ARGUS-CSP-201..204` | CSP | weak `frame-ancestors` | HIGH | Clickjacking | Restrict framing origins |
+| `ARGUS-HSTS-001..004` | HSTS | missing HSTS / short max-age / missing includeSubDomains / no preload | HIGH | MITM protocol-downgrade | `max-age=63072000; includeSubDomains; preload` |
+| `ARGUS-XFO-001` | Base | No `X-Frame-Options` | HIGH | Clickjacking | `DENY` or `SAMEORIGIN` |
+| `ARGUS-XCTO-001` | Base | No `X-Content-Type-Options` | MEDIUM | MIME-sniffing → XSS | `nosniff` |
+| `ARGUS-XCTO-002` | Base | XCTO not `nosniff` | LOW | MIME-sniffing allowed | `nosniff` |
+| `ARGUS-SERVER-001` | Base | `Server` header present | LOW | Tech fingerprinting → CVE verification | Suppress/obfuscate header |
+| `ARGUS-SERVER-002` | Base | `X-Powered-By` present | MEDIUM | Framework/version disclosure | Remove from server config |
+| `ARGUS-CORS-001` | CORS | Wildcard `*` origin | MEDIUM | Any origin reads resources | Restrict to trusted domains |
+| `ARGUS-CORS-002..006` | CORS | unsafe reflection / missing headers / origins order | MEDIUM | Credentialed cross-origin reads | Tighten allowlist |
+| `ARGUS-COOKIE-001` | Cookie | Set-Cookie without `Secure` | MEDIUM | Cookie over plaintext HTTP | Add `Secure` |
+| `ARGUS-COOKIE-002` | Cookie | Set-Cookie without `HttpOnly` | MEDIUM | Readable by injected JS (XSS) | Add `HttpOnly` |
+| `ARGUS-COOKIE-003` | Cookie | Set-Cookie without `SameSite` | LOW | CSRF exposure | `SameSite=Lax`/`Strict` |
+| `ARGUS-COOKIE-004..008` | Cookie | domain/path/max-age/prefix issues | LOW | Mis-scoped cookies | Tighten cookie scope |
+| `ARGUS-CACHE-001` | Cache | No `Cache-Control` | LOW | Inefficient caching | e.g. `max-age=3600` |
+| `ARGUS-CACHE-002` | Cache | `no-cache`/`no-store` on stable content | LOW | Re-fetch inefficiency | Tune `max-age`/`immutable` |
+| `ARGUS-CACHE-003` | Cache | over-long max-age on sensitive content | LOW | Stale sensitive cache | Shorten or `no-store` |
+| `ARGUS-COOP-001/002` | Cross-Origin | missing / permissive COOP | MEDIUM | cross-origin isolation gaps | `same-origin` |
+| `ARGUS-COEP-001/002` | Cross-Origin | missing / permissive COEP | MEDIUM | cross-origin isolation gaps | `require-corp` + CORP |
+| `ARGUS-CORP-001` | Cross-Origin | missing CORP | LOW | cross-origin reads | Restrict CORP |
+| `ARGUS-REFERRER-001..003` | Referrer | missing Referrer-Policy / weak value (`no-referrer-when-downgrade`) | LOW/MEDIUM | Referrer leakage | `strict-origin-when-cross-origin` |
+| `ARGUS-PERMISSIONS-001..003` | Permissions | missing Permissions-Policy / permissive defaults | LOW/MEDIUM | Feature abuse | `permissions-policy` allowlist |
+
+Score penalties per finding are listed in §5.4 (Score Engine 2.0 category deductions).
 
 Notes:
 
-- Header matching is case-insensitive.
-- X-Frame-Options is considered satisfied if *any* CSP exists (frame-ancestors may cover it).
-- Verbose mode *surfaces* additional headers (Referrer-Policy, Permissions-Policy, COOP/COEP/CORP, Via, X-AspNet-Version, X-Runtime) but these do **not yet generate findings** — see Roadmap/MVP gaps.
+- Header matching is case-insensitive (normalized to lowercase before analysis).
+- X-Frame-Options is considered satisfied if *any* CSP `frame-ancestors` exists.
+- The legacy `SEC-*`/`LEAK-*`/`CORS-*`/`PERF-*`/`COOKIE-*` IDs from v0.7 are no longer emitted by the deep engine; the Score 2.0 classifier can still *reverse-map* legacy category strings for backward compatibility.
 
 ---
 
@@ -425,9 +503,14 @@ Notes:
 
 ```text
 argus-header [-h] [-v] [--method {GET,HEAD}] [--no-redirect]
-             [--timeout N] [--json FILE] [--score]
+             [--timeout N] [--config FILE] [--score]
+             [--json [FILE]] [--sarif [FILE]] [--report FILE]
              [--markdown FILE] [--html FILE] [--parallel] [--verbose]
+             [--fail-on {critical,high,medium,low,none}]
+             [--min-score N]
              url [url ...]
+
+argus-header diff <before.json> <after.json>
 ```
 
 | Option | Default | Description |
@@ -436,16 +519,22 @@ argus-header [-h] [-v] [--method {GET,HEAD}] [--no-redirect]
 | `--method {GET,HEAD}` | `GET` | HTTP method used for probing |
 | `--timeout N` | `10` | Per-request timeout in seconds |
 | `--no-redirect` | off | Do not follow 3xx responses |
-| `--parallel` | off | Scan multiple URLs concurrently (max 5 workers) |
-| `--json FILE` | none | Write JSON report (v0.7 enhanced schema, single-target scans) |
-| `--score` | off | Print Security Score / Grade / Risk / Penalty panel |
+| `--config FILE` | none | Load a `.argus.yml` configuration file |
+| `--json [FILE]` | none | Write JSON report (v0.8 schema); stdout when FILE omitted |
+| `--sarif [FILE]` | none | Write a SARIF 2.1.0 report; stdout when FILE omitted |
+| `--report FILE` | none | Save a cyberpunk-style HTML security report |
+| `--score` | off | Print the full Security Score 2.0 breakdown (score, grade, categories, risk) |
+| `--fail-on {critical,high,medium,low,none}` | `none` | CI mode: fail build on findings at/above this severity |
+| `--min-score N` | `80` | CI mode: fail build when score is below N |
 | `--markdown FILE` | none | Save a Markdown security report |
-| `--html FILE` | none | Save an HTML security report (self-contained, escaped) |
+| `--html FILE` | none | Save a legacy HTML security report (self-contained, escaped) |
+| `--parallel` | off | Scan multiple URLs concurrently (max 5 workers) |
 | `--verbose` | off | Print full 15-section report after the summary table |
+| `diff` | — | Compare two scan reports (`argus-header diff before.json after.json`) |
 | `-v`, `--version` | — | Print `Argus Header <version>` and exit |
 | `-h`, `--help` | — | Help with examples |
 
-Exit codes: `0` success · `130` interrupted (Ctrl-C) · `1` unexpected error.
+Exit codes: `0` success · `130` interrupted (Ctrl-C) · `1` unexpected error (or CI gate failure).
 
 > ⚠️ URLs without a scheme get `https://` prepended automatically.
 
@@ -550,7 +639,7 @@ python -m http.server 5500 --directory frontend   # terminal 2 — UI on :5500
 
 ```bash
 pip install argus-header
-argus-header --version      # Argus Header 0.7.0
+argus-header --version      # Argus Header 0.8.0
 ```
 
 ### From source
@@ -562,7 +651,7 @@ python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\act
 pip install -e .
 ```
 
-Runtime dependencies: `requests>=2.32.0`, `rich>=13.7.0`.
+Runtime dependencies: `requests>=2.32.0`, `rich>=13.7.0`, `pyyaml>=6.0.0`.
 API extras (not yet declared in packaging): `fastapi`, `uvicorn`, `pydantic`.
 
 ---
@@ -591,11 +680,31 @@ argus-header https://google.com https://github.com --parallel
 # Disable redirect following (see the 301 itself)
 argus-header http://example.com --no-redirect
 
-# Export JSON
+# Export JSON (file, or stdout when FILE omitted)
 argus-header https://example.com --json report.json
+argus-header https://example.com --json
 
-# Show the security score & grade
+# Export SARIF 2.1.0
+argus-header https://example.com --sarif report.sarif
+argus-header https://example.com --sarif
+
+# Export cyberpunk-style HTML report
+argus-header https://example.com --report report.html
+
+# Show the security score 2.0 breakdown & grade
 argus-header https://example.com --score
+
+# CI gating — fail the build on high-severity findings
+argus-header https://example.com --fail-on high
+
+# CI gating — fail the build when score < 80
+argus-header https://example.com --min-score 80
+
+# Load a YAML configuration
+argus-header https://example.com --config .argus.yml
+
+# Compare two scan reports
+argus-header diff before.json after.json
 
 # Export Markdown
 argus-header https://example.com --markdown report.md
@@ -607,42 +716,56 @@ argus-header https://example.com --html report.html
 argus-header https://example.com \
     --score \
     --json report.json \
+    --sarif report.sarif \
     --markdown report.md \
     --html report.html
 ```
 
 ---
 
-## 12. Report Formats (v0.7)
+## 12. Report Formats (v0.8)
 
-`--json`, `--markdown` and `--html` all render the **same canonical report dict** built by `reporter.build_json_report()`:
+`--json`, `--markdown`, `--html`, `--report` and `--sarif` all operate on the **same canonical v0.8 report dict** built by `output.json_report.build_report()`:
 
 ```json
 {
-    "schema_version": "0.7",
-    "tool": {"name": "Argus Header", "version": "0.7.0"},
+    "schema_version": "0.8",
+    "tool": {"name": "Argus Header", "version": "0.8.0"},
     "scan": {
         "id": "a1b2c3d4",
         "target": "https://example.com",
         "final_url": "https://example.com/",
-        "timestamp": "2026-08-22T12:00:00.123456+00:00",
+        "timestamp": "2026-09-03T12:00:00.123456+00:00",
         "duration_seconds": 0.42,
         "method": "GET",
         "status": 200
     },
-    "score": {"value": 27, "grade": "F", "risk_level": "HIGH", "penalty": 73},
-    "summary": {"total_findings": 6, "high": 3, "medium": 2, "low": 1},
+    "score": {
+        "value": 27, "grade": "F", "risk_level": "HIGH", "penalty": 73,
+        "total_findings": 6,
+        "categories": {"Content": 4, "Transport": 4, "Browser": 4, "Isolation": 14, "Cookies": 11},
+        "max_per_category": 25,
+        "breakdown": {"CRITICAL": 0, "HIGH": 3, "MEDIUM": 2, "LOW": 1},
+        "weights": {"Content": 25, "Transport": 20, "Browser": 25, "Isolation": 15, "Cookies": 15}
+    },
+    "summary": {"total_findings": 6, "critical": 0, "high": 3, "medium": 2, "low": 1},
     "headers": {"...raw response headers...": ""},
     "findings": [
         {
-            "id": "SEC-002",
+            "id": "ARGUS-CSP-001",
             "category": "Security",
-            "issue": "Missing Strict-Transport-Security",
-            "severity": "HIGH",
-            "risk": "Susceptible to Man-in-the-Middle (MITM) protocol downgrade attacks.",
-            "fix": "Add 'Strict-Transport-Security: max-age=63072000; includeSubDomains'."
+            "title": "Missing Content-Security-Policy",
+            "severity": "CRITICAL",
+            "risk": "XSS (Cross-Site Scripting) attacks are easier to exploit.",
+            "fix": "Add a 'Content-Security-Policy' header defining allowed content sources."
         }
-    ]
+    ],
+    "config": {
+        "policy": {"minimum_score": 80, "fail_on": "none"},
+        "rules": {"csp": true, "cors": true, "cookies": true, "hsts": true,
+                  "cache": true, "cross_origin": true, "referrer": true,
+                  "permissions": true, "base_headers": true}
+    }
 }
 ```
 
@@ -650,14 +773,20 @@ Notes:
 
 - The score is always computed and included in exports; `--score` only adds the terminal panel.
 - `scan.timestamp` is a timezone-aware ISO-8601 string.
+- `--sarif` renders a SARIF 2.1.0 document (rules, results, severity levels) from the same findings.
+- `--json` and `--sarif` accept an optional `FILE`; when omitted they print to stdout.
 - Markdown renders: score line, summary table, findings grouped by severity with Rule IDs and Risk/Fix, response headers table.
-- HTML is self-contained; every dynamic value is escaped with `html.escape()`.
+- HTML (legacy `--html`) is self-contained and escapes every dynamic value with `html.escape()`.
 
 ---
 
 ## 13. Testing
 
-Suites under `tests/` (pytest): `test_analyzer.py`, `test_scorer.py`, `test_cookies.py`, `test_requester.py`, `test_reporter.py`, `test_reporter_json.py`, `test_markdown.py`, `test_html_report.py`, `test_utils.py`.
+Suites under `tests/` (pytest):
+
+- **Legacy engine**: `test_analyzer.py`, `test_scorer.py`, `test_cookies.py`, `test_reporter.py`, `test_reporter_json.py`, `test_markdown.py`, `test_html_report.py`
+- **v0.8 engine**: `test_analyzers.py` (deep analyzers), `test_rules.py`, `test_policy.py`, `test_scoring.py`, `test_sarif.py`, `test_diff.py`
+- **Transport/util**: `test_requester.py`, `test_utils.py`, `test_json.py`, `test_csp.py`, `test_hsts.py`, `test_cors.py`, `test_cookie_security.py`
 
 Run:
 
@@ -666,13 +795,13 @@ pip install -r requirements-dev.txt
 pytest tests/ -v                 # add --cov=src/argus_header for coverage
 ```
 
-Current state: **37 tests, all passing**. Coverage highlights: `scorer`, `cookies`, `markdown`, `html_report`, `utils` at 100%; `analyzer` 96%. `cli.py`/`verbose.py` rendering paths are exercised only by manual smoke tests (roadmap item for 0.8.0).
-
 Notes:
 
-- Analyzer tests verify missing-CSP/HSTS detection, Server/X-Powered-By leaks, wildcard CORS, Cache-Control, and rule-ID presence.
-- Scorer tests cover penalties, grade boundaries, risk levels and dynamic-leak prefix matching.
-- Cookie tests cover Secure/HttpOnly/SameSite detection and fully-attributed cookies.
+- Analyzer/rule tests verify per-header detection across the 9 rule families and `ARGUS-*` rule-ID presence.
+- Scoring tests cover Score Engine 2.0 category budgets, grade boundaries (A+..F), risk levels, and severity deductions.
+- Policy tests cover CI gating (`--fail-on`, `--min-score`).
+- SARIF tests verify valid SARIF 2.1.0 output shape.
+- Diff tests verify report comparison behavior.
 - Requester tests hit live network (example.com) plus a bogus host failure case — they are integration-style.
 
 ---
@@ -731,12 +860,12 @@ Track these before calling any release production-ready:
 | # | Issue | Impact | Suggested fix |
 |---|---|---|---|
 | ~~K1~~ | ~~Broken `src.argus.*` imports~~ | — | **Fixed in v0.7.0** (all modules/tests import `argus_header.*`) |
+| ~~K6~~ | ~~Verbose watchlist headers not covered by analyzer rules~~ | — | **Fixed in v0.8.0** (deep engine now covers Referrer-Policy, Permissions-Policy, COOP/COEP/CORP) |
+| ~~K7~~ | ~~`scan_time: "Now"` placeholder in JSON~~ | — | **Fixed in v0.7.0** (ISO-8601 UTC timestamps in canonical reports) |
 | K2 | `fastapi`, `uvicorn`, `pydantic` missing from `requirements.txt`/extras | `uvicorn api:app` crashes without manual install | Add `[project.optional-dependencies] api = [...]` |
 | K3 | Docker entrypoint runs `main.py` with no args → instant `exit 1` unless URL passed | Confusing first-run UX | Document arg passing or switch entrypoint to the CLI |
 | K4 | CORS `allow_origins=["*"]` combined with `allow_credentials=True` | Invalid/insecure combo; browsers reject credentialed wildcard | List explicit origins, drop credentials or wildcard |
 | K5 | Frontend hardcodes `http://127.0.0.1:8000` | Breaks when hosted elsewhere / over HTTPS (mixed content) | Derive base URL from `window.location` or config var |
-| K6 | Verbose watchlist headers beyond cookies (Referrer-Policy, Permissions-Policy, COOP/COEP/CORP, Via, X-AspNet-Version, X-Runtime) not covered by analyzer rules | Findings ≠ verbose view; those headers never produce findings | Port remaining watchlist into the rule engine |
-| ~~K7~~ | ~~`scan_time: "Now"` placeholder in JSON~~ | — | **Fixed in v0.7.0** (ISO-8601 UTC timestamps in canonical reports) |
 | K8 | All export formats ignored for multi-URL scans; no per-URL files | Missing exports in batch mode | Write `<prefix>-<host>.<ext>` per target |
 | K9 | No SSRF guard: API will fetch internal IPs / localhost | Abuse vector on public deployments | Validate public IPs, block private ranges |
 | K10 | Requester/response time measured around analysis only, not network I/O; `response_time` key never set | Verbose shows "N/A" | Time inside `fetch_headers` |
@@ -750,14 +879,14 @@ Track these before calling any release production-ready:
 |---|---|---|
 | 0.6.0 | Verbose reporting | Released |
 | 0.7.0 | Scoring & reports | Released |
-| 0.8.0 | Quality | Next |
-| 0.9.0 | Deep inspection | Planned |
+| 0.8.0 | Deep analysis engine | Released |
+| 0.9.0 | Deep inspection | Next |
 | 1.0.0 | Stable | Planned |
 
 - **0.6.0** (2026-08-02): 15-section `--verbose`, better output organization
 - **0.7.0** (2026-08-22): Security Score 0–100, Grade A–F, cookie analysis, stable rule IDs, enhanced JSON, Markdown & HTML export, API/dashboard score integration
-- **0.8.0** (next): expanded test coverage (CLI/verbose rendering), GitHub Actions CI, docs, architecture cleanup
-- **0.9.0** (planned): TLS inspection, certificate analysis, HTTP/2 detection, advanced CORS analysis
+- **0.8.0** (2026-09-03): Deep rules engine (9 rule families), Score Engine 2.0 (A+ grades), SARIF + cyberpunk HTML exports, `diff` command, CI/CD gating, YAML config
+- **0.9.0** (next): TLS inspection, certificate analysis, HTTP/2 detection, advanced CORS analysis
 - **1.0.0** (planned): production docs, comprehensive testing, complete analysis
 
 ---

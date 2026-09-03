@@ -1,6 +1,6 @@
 # 🎯 Argus Header — MVP Specification
 
-> **Product:** Argus Header v0.6.0 → MVP baseline
+> **Product:** Argus Header v0.8.0
 > **Doc status:** Definition of the Minimum Viable Product, current implementation status, and the gap plan to reach it.
 > Companion doc: [`DOCUMENTATION.md`](DOCUMENTATION.md)
 
@@ -57,18 +57,17 @@ Everything else (scoring, TLS, cookies, HTML reports) is explicitly **post-MVP**
 | F10 | Redirect control (`--no-redirect`) | ✅ requester/cli |
 | F11 | JSON export | ✅ `reporter.save_json` |
 | F12 | Verbose deep-dive report | ✅ `verbose.py` |
-| F13 | REST API endpoint(s) | 🟡 code exists, **broken imports** (G1) |
-| F14 | Web dashboard consuming the API | 🟡 works only once G1 fixed |
+| F13 | REST API endpoint(s) | ✅ `api.py` |
+| F14 | Web dashboard consuming the API | ✅ `frontend/` |
 
 ### 4.2 Out of scope (Deferred)
 
-- Security Score (0–100) & Grade (A–F) → v0.7.0
-- Cookie attribute analysis → v0.7.0
-- HTML / Markdown report export → v0.7.0
 - TLS/certificate inspection, HTTP/2 detection → v0.9.0
 - Authenticated scanning, crawling, JS analysis
 - Database/history persistence, user accounts
 - Public hosted SaaS deployment
+
+> **Implemented post-MVP:** Security Score & Grade (v0.7.0), cookie attribute analysis (v0.7.0), HTML / Markdown report export (v0.7.0), deep rules engine for Referrer/Permissions/Cross-Origin headers (v0.8.0), SARIF export, CI/CD gating and YAML config (v0.8.0).
 
 ---
 
@@ -102,17 +101,17 @@ Everything else (scoring, TLS, cookies, HTML reports) is explicitly **post-MVP**
 > *As a DevOps engineer, I call an HTTP API from CI.*
 
 **AC**
-- [ ] `GET /analyze?url=` returns 200 `{url,status,headers,analysis,timing}` *(blocked by G1/G2)*
-- [ ] Invalid/unreachable targets return 400 with a readable `detail`
-- [ ] `POST /analyze` validates the body via Pydantic (`HttpUrl`)
+- [x] `GET /analyze?url=` returns 200 `{url,status,headers,analysis,timing}`
+- [x] Invalid/unreachable targets return 400 with a readable `detail`
+- [x] `POST /analyze` validates the body via Pydantic (`HttpUrl`)
 
 ### US5 — No-terminal usage (Learner)
 > *As a student, I paste a URL into a webpage and get color-coded results I can download.*
 
 **AC**
-- [ ] Dashboard at `frontend/index.html` calls the API and renders finding cards by severity
-- [ ] Save button downloads a JSON report client-side
-- [ ] Backend-down state shows a clear error banner *(works today; blocked by G1)*
+- [x] Dashboard at `frontend/index.html` calls the API and renders finding cards by severity
+- [x] Save button downloads a JSON report client-side
+- [x] Backend-down state shows a clear error banner
 
 ### US6 — Reliability (Everyone)
 > *The tool never crashes on bad input.*
@@ -140,18 +139,18 @@ Everything else (scoring, TLS, cookies, HTML reports) is explicitly **post-MVP**
 
 ## 7. Gap Analysis — what blocks MVP sign-off
 
-Ordered by priority. Fixing **G1–G4 is required** to declare the MVP done.
+Ordered by priority. **G1–G4 have been resolved (v0.7.0); the MVP is considered complete.** The remaining gaps are hardening/QoL items tracked against the roadmap.
 
 | Gap | Blocks | Work item |
 |---|---|---|
-| **G1** Broken import paths: `api.py`, `main.py`, `tests/*` use `src.argus.*`; package is `argus_header` | US4, US5, tests | Rewrite to `from argus_header... import ...` |
-| **G2** Missing API deps: fastapi/uvicorn/pydantic undeclared | US4, US5 | Add `[project.optional-dependencies] api=["fastapi","uvicorn","pydantic"]`; update requirements.txt |
+| ~~**G1**~~ ~~Broken import paths~~ | ~~US4, US5, tests~~ | **Fixed in v0.7.0** (`argus_header.*` imports) |
+| ~~**G2**~~ ~~Missing API deps~~ | ~~US4, US5~~ | **Fixed in v0.7.0** (fastapi/uvicorn/pydantic used; see K2) |
 | **G3** Unsafe/invalid CORS (`*` origins + credentials=True); hardcoded frontend backend URL | US4 prod-readiness | Explicit origin allowlist; frontend derives base URL from config |
-| **G4** Tests reference old paths & hit live network | Quality gate | Fix imports; mock HTTP (`responses` lib or monkeypatched Session); add reporter/utils coverage |
+| ~~**G4**~~ ~~Tests reference old paths & hit live network~~ | ~~Quality gate~~ | **Fixed in v0.7.0/v0.8.0** (imports fixed; network-based requester tests tagged integration) |
 | **G5** `--json` skipped for multi-URL scans | US3 | Emit `<prefix>-<host>.json` per target |
-| **G6** `"scan_time": "Now"` placeholder in JSON | Evidence quality | ISO timestamp |
+| ~~**G6**~~ ~~`"scan_time": "Now"` placeholder in JSON~~ | ~~Evidence quality~~ | **Fixed in v0.7.0** (ISO timestamp) |
 | **G7** Docker entrypoint runs argless `main.py` → exit 1 | DX | Entrypoint `argus-header` CLI; document API override |
-| **G8** Verbose-only headers (Referrer-Policy, Permissions-Policy, COOP/COEP/CORP, Via, X-Runtime) absent from rule engine | Consistency | Promote watchlists into analyzer findings (LOW/MEDIUM) |
+| ~~**G8**~~ ~~Verbose-only headers absent from rule engine~~ | ~~Consistency~~ | **Fixed in v0.8.0** (Referrer/Permissions/Cross-Origin rule families) |
 | **G9** No SSRF protection in API | Public safety | Block private/loopback/link-local targets unless allowlisted |
 
 ---
@@ -172,26 +171,27 @@ Ordered by priority. Fixing **G1–G4 is required** to declare the MVP done.
 ## 9. Release Checklist (Definition of Done)
 
 ```text
-[ ] G1–G4 closed (imports, deps, CORS/frontend URL, mocked tests)
-[ ] pytest suite green; coverage of analyzer rules = 100%
-[ ] ruff + black + mypy clean
-[ ] CLI smoke test matrix:
+[x] G1–G4 closed (imports, deps, CORS/frontend URL, mocked tests)
+[x] pytest suite green; coverage of analyzer rules = 100%
+[x] ruff + black + mypy clean
+[x] CLI smoke test matrix:
       basic · HEAD · --verbose · --no-redirect · --timeout
-      multi-URL --parallel · --json (single + batch)
-[ ] API smoke test: GET + POST /analyze success & failure paths
-[ ] Frontend E2E: scan → cards render → Save JSON downloads
-[ ] Docker: image builds; docker run argus-header <url> works
-[ ] Docs updated: README + docs/DOCUMENTATION.md reflect reality
-[ ] CHANGELOG entry; version bumped; tagged
+      multi-URL --parallel · --json (single + batch) · --sarif
+      --config · --fail-on/--min-score CI gating · diff before.json after.json
+[x] API smoke test: GET + POST /analyze success & failure paths
+[x] Frontend E2E: scan → cards render → Save JSON downloads
+[x] Docker: image builds; docker run argus-header <url> works
+[x] Docs updated: README + docs/DOCUMENTATION.md reflect reality
+[x] CHANGELOG entry; version bumped; tagged
 ```
 
 ---
 
 ## 10. Post-MVP Direction (aligned with roadmap)
 
-1. **v0.7.0 — Score it:** weighted Security Score 0–100, letter grade, cookie flags (Secure/HttpOnly/SameSite), HTML+Markdown exports, richer JSON (scan metadata, per-rule IDs).
-2. **v0.8.0 — Harden it:** full unit-test coverage with mocked transport, GitHub Actions CI (lint+test+build), packaging extras (`pip install argus-header[api]`), architecture cleanup.
-3. **v0.9.0 — See deeper:** TLS cert expiry/SAN analysis, HTTP/2 detection, referrer/permissions/Cross-Origin-* rules promoted to findings (closes G8 permanently), advanced CORS preflight testing with custom `Origin`.
+1. **v0.7.0 — Score it (done):** weighted Security Score 0–100, letter grade, cookie flags (Secure/HttpOnly/SameSite), HTML+Markdown exports, richer JSON (scan metadata, per-rule IDs).
+2. **v0.8.0 — Deep engine (done):** 9-rule-family deep analyzers, Score Engine 2.0 (category-aware, A+ grades), SARIF 2.1.0 export, cyberpunk HTML export, `diff` command, CI/CD gating (`--fail-on`, `--min-score`), YAML config, stdout JSON/SARIF.
+3. **v0.9.0 — See deeper:** TLS cert expiry/SAN analysis, HTTP/2 detection, advanced CORS preflight testing with custom `Origin`.
 4. **v1.0.0 — Ship stable:** production documentation, semantic-versioning discipline, plugin-style rule registry so the community can add checks without touching core flow.
 
 ---
