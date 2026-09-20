@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "argus-header"
-version = "0.7.0"
+version = "0.8.0"
 description = "A Python CLI tool for analyzing HTTP response headers and identifying security issues."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -45,13 +45,17 @@ classifiers = [
 
 dependencies = [
     "requests>=2.32.0",
-    "rich>=13.7.0"
+    "rich>=13.7.0",
+    "pyyaml>=6.0.0"
 ]
 
 [project.urls]
 Homepage = "https://github.com/heyshreee/argus-header"
 Repository = "https://github.com/heyshreee/argus-header"
 Issues = "https://github.com/heyshreee/argus-header/issues"
+
+[project.optional-dependencies]
+api = ["fastapi", "uvicorn", "pydantic"]
 
 [project.scripts]
 argus-header = "argus_header.cli:main"
@@ -65,3 +69,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 argus_header = ["*.json"]
+
+[tool.black]
+target-version = ["py39"]

@@ -26,7 +26,8 @@ def render_html(report: dict) -> str:
         risk = escape(str(finding.get("risk", "N/A")))
         fix = escape(str(finding.get("fix", "N/A")))
 
-        finding_rows.append(f"""
+        finding_rows.append(
+            f"""
             <article class="finding">
                 <div class="finding-header">
                     <span class="severity severity-{severity.lower()}">
@@ -41,7 +42,8 @@ def render_html(report: dict) -> str:
                 <p><strong>Risk:</strong> {risk}</p>
                 <p><strong>Fix:</strong> {fix}</p>
             </article>
-            """)
+            """
+        )
 
     if not finding_rows:
         findings_html = """
@@ -55,12 +57,14 @@ def render_html(report: dict) -> str:
     header_rows = []
 
     for name, value in headers.items():
-        header_rows.append(f"""
+        header_rows.append(
+            f"""
             <tr>
                 <td>{escape(str(name))}</td>
                 <td>{escape(str(value))}</td>
             </tr>
-            """)
+            """
+        )
 
     headers_html = "\n".join(header_rows)
 

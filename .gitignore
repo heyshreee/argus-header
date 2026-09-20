@@ -21,6 +21,9 @@ venv/
 # Reports
 report/
 
+# Local docs site (node_modules etc.)
+site/
+
 # OS files
 .DS_Store
 .aider*
