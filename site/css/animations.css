@@ -1,0 +1,184 @@
+/* ============================================================
+   ARGUS HEADER — animations.css
+   Scroll reveals · scanner states · caret · micro-interactions
+   Fail-safe: no resting hidden state. Entrance effects are one-shot
+   keyframe animations that only run when html.js has
+   data-reveal-ready AND the element is tagged .is-in / container .is-live.
+   If JS is off or the observer never fires, everything stays visible.
+   ============================================================ */
+
+html.js[data-reveal-ready] [data-reveal].is-in {
+  animation: fade-rise 0.8s var(--ease) both;
+}
+
+html.js[data-reveal-ready] [data-reveal][data-delay="1"].is-in { animation-delay: 90ms; }
+html.js[data-reveal-ready] [data-reveal][data-delay="2"].is-in { animation-delay: 180ms; }
+html.js[data-reveal-ready] [data-reveal][data-delay="3"].is-in { animation-delay: 270ms; }
+html.js[data-reveal-ready] [data-reveal][data-delay="4"].is-in { animation-delay: 360ms; }
+
+[data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ------------------------------------------------ Stagger containers
+   Children carry inline --d (delay ms). Only animate when arming class is
+   present; otherwise fully visible. */
+html.js[data-reveal-ready] .stagger.is-in > * {
+  animation: fade-rise 0.6s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ------------------------------------------------ Scanner stages
+   Rows/groups mount when their scan stage is reached, so a one-shot
+   entrance runs at that moment. Gated on the armed reveal system so the
+   static product console mounts quietly on first paint. */
+html.js[data-reveal-ready] .scan__body .scan__row,
+html.js[data-reveal-ready] .scan__body .scan__group {
+  animation: fade-rise 0.55s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+html.js[data-reveal-ready] .scan__body .scan__check {
+  animation: fade-rise 0.5s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ------------------------------------------------ Scanner live ops
+   Busy dot pulse while a scan is running. */
+.scan__status.is-busy .scan__dot {
+  animation: dot-pulse 1.1s ease-in-out infinite;
+}
+
+.scan__dot {
+  box-shadow: 0 0 0 0 transparent;
+  transition: box-shadow 0.4s ease, background 0.4s ease;
+}
+
+.scan.is-final .scan__status.is-ready .scan__dot {
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+/* Status tags settle into colour once the scan finishes. */
+.scan.is-final .scan__status-tag,
+.scan.is-final .scan__foot-note {
+  animation: settle-in 0.5s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Row content of a product panel fades in gently when revealed. */
+.panel-stagger.is-in > * {
+  animation: fade-in 0.5s var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ------------------------------------------------ Mobile nav */
+.mobile-nav {
+  animation: nav-fade 0.32s var(--ease) both;
+}
+
+/* ------------------------------------------------ Arrow movement (hover) */
+.btn:hover .btn__arrow,
+.check-row:hover .check-row__arrow {
+  /* transform handled in components.css to keep motion intent clear */
+}
+
+/* ------------------------------------------------ Keyframes */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.997);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes settle-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dot-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.55;
+  }
+}
+
+@keyframes caret-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes nav-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------ Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  [data-reveal],
+  .stagger > *,
+  .panel-stagger > * {
+    opacity: 1;
+    transform: none;
+  }
+
+  .t-caret {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------ Print: never blank */
+@media print {
+  [data-reveal],
+  .stagger > *,
+  .scan__status-tag,
+  .scan__foot-note {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .t-caret {
+    display: none;
+  }
+}
