@@ -1,20 +1,30 @@
+import os
 import time
-import uuid
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from argus_header import __version__
-from argus_header.analyzer import analyze_headers
-from argus_header.reporter import build_json_report
-from argus_header.requester import fetch_headers
 from argus_header.schemas import (
     AnalysisSummary,
     AnalyzeRequest,
     AnalyzeResponse,
     ScoreResult,
 )
-from argus_header.scorer import calculate_score
+from argus_header.scanner import scan_target
+from argus_header.url_safety import UnsafeTargetError, validate_public_http_url
+from argus_header.utils import normalize_url
+
+
+def _allowed_origins() -> list[str]:
+    """Read the explicit browser origins allowed to call this API.
+
+    Operators can set ``ARGUS_ALLOWED_ORIGINS`` to a comma-separated list.
+    Keeping a small localhost default makes development convenient without
+    publishing a credentialed wildcard CORS policy.
+    """
+    raw = os.getenv("ARGUS_ALLOWED_ORIGINS", "http://localhost:3000")
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 app = FastAPI(
     title="HTTP Header Analyzer API",
@@ -24,45 +34,49 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # frontend access
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_allowed_origins(),
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 
 def _analyze(url: str) -> AnalyzeResponse:
-    """Shared scan pipeline: fetch → analyze → score → canonical report."""
+    """Run the safe, v0.8 scan pipeline used by the CLI.
+
+    Redirects are deliberately disabled for the API: a safe public URL must
+    not be able to redirect the service to an internal address.
+    """
     start = time.perf_counter()
+    target = normalize_url(url)
 
-    response_data = fetch_headers(url)
+    try:
+        report = scan_target(
+            target,
+            follow_redirects=False,
+            request_validator=validate_public_http_url,
+        )
+    except UnsafeTargetError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    if not response_data.get("success"):
+    if report.get("error"):
         raise HTTPException(
             status_code=400,
-            detail=response_data.get("error", "Failed to fetch headers."),
+            detail=report["error"],
         )
 
-    findings = analyze_headers(response_data)
-    score = calculate_score(findings)
-
-    report = build_json_report(
-        response_data=response_data,
-        findings=findings,
-        score_data=score,
-        scan_id=uuid.uuid4().hex[:8],
-        target=str(url),
-    )
+    findings = [_api_finding(finding) for finding in report["findings"]]
+    score = report["score"]
 
     elapsed = round(time.perf_counter() - start, 4)
 
     return AnalyzeResponse(
-        url=report["scan"]["final_url"] or report["scan"]["target"],
+        url=report["scan"]["final_url"],
         status=report["scan"]["status"],
         headers=report["headers"],
         analysis=findings,
         score=ScoreResult(
-            value=score["score"],
+            value=score["value"],
             grade=score["grade"],
             risk_level=score["risk_level"],
             penalty=score["penalty"],
@@ -75,6 +89,18 @@ def _analyze(url: str) -> AnalyzeResponse:
         ),
         timing={"backend_seconds": elapsed},
     )
+
+
+def _api_finding(finding: dict) -> dict:
+    """Adapt the v0.8 finding schema to the established dashboard contract."""
+    return {
+        "id": finding.get("id", "ARGUS-UNKNOWN"),
+        "category": finding.get("category", "General"),
+        "issue": finding.get("title", finding.get("issue", "Finding")),
+        "severity": finding.get("severity", "LOW"),
+        "risk": finding.get("risk") or finding.get("impact") or "",
+        "fix": finding.get("recommendation", finding.get("fix", "")),
+    }
 
 
 @app.get(

@@ -13,7 +13,9 @@ def save_json_report(response_data, findings, target_url):
     """Save the final report into report/<hostname>.json"""
 
     parsed = urlparse(target_url)
-    hostname = parsed.netloc or parsed.path  # handles "example.com" and "https://example.com"
+    hostname = (
+        parsed.netloc or parsed.path
+    )  # handles "example.com" and "https://example.com"
 
     # Create report folder if missing
     os.makedirs("report", exist_ok=True)
@@ -24,7 +26,7 @@ def save_json_report(response_data, findings, target_url):
         "target": response_data.get("url"),
         "status": response_data.get("status_code"),
         "headers": response_data.get("headers"),
-        "findings": findings
+        "findings": findings,
     }
 
     with open(filepath, "w") as f:

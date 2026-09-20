@@ -30,11 +30,18 @@ def fetch_headers(url: str, method="GET", follow_redirects=True, timeout=10):
             headers={"User-Agent": "HeaderScan-Tool/1.0"},  # Polite User-Agent
         )
 
+        # requests combines repeated Set-Cookie fields in ``response.headers``.
+        # Keep their original boundaries for the cookie analyzer.
+        raw_headers = response.raw.headers
+        getlist = getattr(raw_headers, "getlist", None)
+        cookie_headers = getlist("Set-Cookie") if getlist else []
+
         return {
             "success": True,
             "url": response.url,
             "status_code": response.status_code,
             "headers": dict(response.headers),
+            "set_cookie_headers": list(cookie_headers),
             "http_version": response.raw.version,
         }
 

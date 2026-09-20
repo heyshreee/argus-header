@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.8.0] - 2026-09-03
+
+### Added
+
+- Deep security rules engine with 9 rule families (CSP, CORS, Cookies, HSTS, Cache, Cross-Origin, Referrer, Permissions, Base Headers)
+- Security Score Engine 2.0 — weighted, category-aware scoring with A+ grade
+- YAML configuration support (`--config .argus.yml`)
+- SARIF 2.1.0 report export (`--sarif`)
+- Cyberpunk-style HTML report export (`--report`)
+- `diff` command to compare two scan reports (`argus-header diff before.json after.json`)
+- CI/CD gating via `--fail-on` and `--min-score`
+- JSON report to stdout when `--json` given without a filename
+- SARIF report to stdout when `--sarif` given without a filename
+- PyYAML dependency
+
+### Changed
+
+- Rewrote CLI for the v0.8 scan pipeline
+- Rewrote output renderers (JSON, SARIF, HTML, terminal)
+- Rewrote analyzer layer as modular per-header analyzers
+- New `engine/`, `analyzers/`, `output/`, `diff/`, `models/` package structure
+- Sorted severity into CRITICAL/HIGH/MEDIUM/LOW (added CRITICAL level)
+- Expanded test coverage across analyzers, engine, reports and diff
+
+---
+
 ## [0.7.0] - 2026-08-22
 
 ### Added
