@@ -6,3 +6,4 @@ ruff
 black==25.11.0
 mypy
 types-PyYAML
+types-requests
