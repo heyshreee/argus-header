@@ -42,7 +42,8 @@ def render_html(report: Mapping[str, Any]) -> str:
         cat_score = int(categories.get(cat, 0))
         max_points = int(weights.get(cat, 25) or 25)
         pct = round((cat_score / max_points) * 100) if max_points else 0
-        category_rows.append(f"""
+        category_rows.append(
+            f"""
             <div class="cat-row">
                 <span class="cat-name">{escape(cat)}</span>
                 <span class="cat-bar">
@@ -50,7 +51,8 @@ def render_html(report: Mapping[str, Any]) -> str:
                 </span>
                 <span class="cat-val">{cat_score}/{max_points}</span>
             </div>
-            """)
+            """
+        )
 
     severity_meta = {
         "CRITICAL": ("#ef4444", "#7f1d1d"),
@@ -77,7 +79,8 @@ def render_html(report: Mapping[str, Any]) -> str:
             f'<li><a href="{escape(str(r))}" target="_blank" rel="noopener">{escape(str(r))}</a></li>'
             for r in refs
         )
-        finding_cards.append(f"""
+        finding_cards.append(
+            f"""
             <div class="finding-card" style="border-left-color:{fg}">
                 <div class="finding-head">
                     <span class="sev-badge" style="background:{bg};color:{fg}">{escape(sev)}</span>
@@ -89,7 +92,8 @@ def render_html(report: Mapping[str, Any]) -> str:
                 <p class="field"><span>Recommendation</span>{escape(str(f.get('recommendation') or f.get('fix', 'N/A')))}</p>
                 {('<div class="refs"><strong>References</strong><ul>' + ref_html + '</ul></div>') if ref_html else ''}
             </div>
-            """)
+            """
+        )
 
     header_rows = "".join(
         f"<tr><td>{escape(str(k))}</td><td>{escape(str(v))}</td></tr>"
@@ -102,12 +106,15 @@ def render_html(report: Mapping[str, Any]) -> str:
         ("Medium", summary.get("medium", 0), "#facc15"),
         ("Low", summary.get("low", 0), "#38bdf8"),
     ]
-    summary_cards = "".join(f"""
+    summary_cards = "".join(
+        f"""
         <div class="stat-card">
             <div class="stat-value" style="color:{c}">{v}</div>
             <div class="stat-label">{escape(name)}</div>
         </div>
-        """ for name, v, c in summary_meta)
+        """
+        for name, v, c in summary_meta
+    )
 
     category_html = (
         "".join(category_rows) if category_rows else "<p>No category data.</p>"

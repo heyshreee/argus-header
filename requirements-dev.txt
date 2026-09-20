@@ -3,6 +3,6 @@ twine
 pytest
 pytest-cov
 ruff
-black
+black==25.11.0
 mypy
 types-PyYAML

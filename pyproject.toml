@@ -69,3 +69,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 argus_header = ["*.json"]
+
+[tool.black]
+target-version = ["py39"]
