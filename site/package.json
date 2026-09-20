@@ -1,0 +1,20 @@
+{
+  "name": "argus-header-site",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Landing page for Argus Header — HTTP security analyzer",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  }
+}
