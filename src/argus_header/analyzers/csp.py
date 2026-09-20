@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from argus_header.engine.findings import make_finding
 from argus_header.engine.references import references_for
 
-CSP_HEADERS = ("content-security-policy", "content-security-policy-report-only")
+CSP_HEADERS = ("content-security-policy",)
 
 DANGEROUS_KEYWORDS = (
     ("'unsafe-inline'", "unsafe-inline"),
@@ -73,11 +73,9 @@ def analyze_csp(headers: Mapping[str, str]) -> list[dict]:
 
 
 def _csp_value(headers: Mapping[str, str]) -> str | None:
-    """Return the active policy, preferring CSP over report-only."""
+    """Return the enforcing CSP; report-only policies do not protect users."""
     if "content-security-policy" in headers:
         return headers["content-security-policy"]
-    if "content-security-policy-report-only" in headers:
-        return headers["content-security-policy-report-only"]
     return None
 
 

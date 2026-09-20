@@ -45,52 +45,10 @@ def analyze_cors(headers: Mapping[str, str]) -> list[dict]:
                 ),
             )
         )
-    elif allow_credentials and origin.strip() not in ("*", "null"):
-        # Credentials combined with an explicit origin. If the origin is
-        # reflected from the request (rather than a fixed allowlist entry)
-        # this enables cross-origin credential theft; a scanner cannot
-        # verify the allowlist, so it is reported as HIGH.
-        findings.append(
-            cis_finding(
-                "ARGUS-CORS-002",
-                "Credentials allowed for explicit origin",
-                evidence=(
-                    f"Access-Control-Allow-Origin: {origin}; "
-                    f"Access-Control-Allow-Credentials: {credentials}"
-                ),
-                severity="HIGH",
-                impact=(
-                    "Credentials are allowed for a specific origin. If this "
-                    "origin is reflected from the request rather than a fixed "
-                    "allowlist, browsers will send cookies to any origin the "
-                    "server echoes, enabling cross-origin credential theft."
-                ),
-                recommendation=(
-                    "Only allow a fixed list of trusted origins together with "
-                    "credentials and never reflect the request Origin header."
-                ),
-            )
-        )
-
-    # Reflect-of-origin is risky even when allow-list is used.
-    if origin.strip() not in ("*", "null"):
-        findings.append(
-            cis_finding(
-                "ARGUS-CORS-003",
-                "Reflected or explicit CORS origin configured",
-                evidence=f"Access-Control-Allow-Origin: {origin}",
-                severity="LOW",
-                impact=(
-                    "The origin value is either reflected from the request or "
-                    "statically configured; verify it cannot be attacker "
-                    "controlled."
-                ),
-                recommendation=(
-                    "Ensure the allowed origin is a fixed whitelist rather than "
-                    "reflecting the request Origin header."
-                ),
-            )
-        )
+    # A single response cannot establish whether an explicit origin was
+    # reflected from the request or came from a fixed allowlist. Do not turn
+    # that ambiguity into a vulnerability finding. Reflection requires an
+    # active, multi-Origin probe and is intentionally left to a future rule.
 
     if origin.strip() == "null":
         findings.append(

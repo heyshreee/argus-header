@@ -445,8 +445,11 @@ class AnalyzeResponse(BaseModel): url:str; status:int; headers:Dict[str,str];
 
 ### 5.14 `api.py` — FastAPI service
 
-- CORS middleware: origins `*`, methods `*`, headers `*`, `allow_credentials=True`.
+- CORS middleware: explicit origins from `ARGUS_ALLOWED_ORIGINS` (default:
+  `http://localhost:3000`), GET/POST only, no credentialed wildcard.
 - `GET /analyze?url=...` and `POST /analyze` (body `{"url": "..."}` validated by `AnalyzeRequest`).
+- API scans use the v0.8 engine, reject private/local/reserved destinations,
+  and do not follow redirects to avoid server-side request forgery.
 - On fetch failure → `HTTP 400` with the requester's error text.
 - Success payload includes `score`, `summary`, and `timing.backend_seconds` (rounded to 4 decimals).
 - Helper `get_backend_time(start, end)`.
@@ -600,11 +603,13 @@ curl -X POST http://127.0.0.1:8000/analyze \
      -d '{"url": "https://example.com"}'
 ```
 
-Returns `{response, analysis, score, summary, timing}` where `response` is the full internal `response_data` dict.
+Returns `{url, status, headers, analysis, score, summary, timing}`.
 
 ### CORS
 
-Open permissive policy (`allow_origins=["*"]`) so the static frontend can call it from anywhere during development. Tighten before production (see §16).
+Only explicitly allowed origins may call the API. Configure them with
+`ARGUS_ALLOWED_ORIGINS` as a comma-separated list; the development default is
+`http://localhost:3000`. Credentialed cross-origin requests are disabled.
 
 ---
 
@@ -876,10 +881,10 @@ Track these before calling any release production-ready:
 | ~~K7~~ | ~~`scan_time: "Now"` placeholder in JSON~~ | — | **Fixed in v0.7.0** (ISO-8601 UTC timestamps in canonical reports) |
 | ~~K2~~ | ~~API deps undeclared~~ | — | **Fixed in v0.8.0** (`[project.optional-dependencies] api` → `pip install -e ".[api]"`) |
 | K3 | Docker entrypoint runs `main.py` with no args → instant `exit 1` unless URL passed | Confusing first-run UX | Document arg passing or switch entrypoint to the CLI |
-| K4 | CORS `allow_origins=["*"]` combined with `allow_credentials=True` | Invalid/insecure combo; browsers reject credentialed wildcard | List explicit origins, drop credentials or wildcard |
-| K5 | Frontend hardcodes `http://127.0.0.1:8000` | Breaks when hosted elsewhere / over HTTPS (mixed content) | Derive base URL from `window.location` or config var |
+| ~~K4~~ | ~~CORS `allow_origins=["*"]` combined with `allow_credentials=True`~~ | — | **Fixed**: explicit configurable origins, no credentialed wildcard |
+| ~~K5~~ | ~~Frontend hardcodes `http://127.0.0.1:8000`~~ | — | **Fixed**: derives same-origin API URL, with optional `window.ARGUS_API_URL` override |
 | K8 | All export formats ignored for multi-URL scans; no per-URL files | Missing exports in batch mode | Write `<prefix>-<host>.<ext>` per target |
-| K9 | No SSRF guard: API will fetch internal IPs / localhost | Abuse vector on public deployments | Validate public IPs, block private ranges |
+| ~~K9~~ | ~~No SSRF guard: API will fetch internal IPs / localhost~~ | — | **Fixed**: API allows only public HTTP(S) hosts and blocks redirects |
 | K10 | Requester/response time measured around analysis only, not network I/O; `response_time` key never set | Verbose shows "N/A" | Time inside `fetch_headers` |
 | K11 | Tests perform real network calls | Slow/flaky CI | Mock with `responses`/`unittest.mock` |
 

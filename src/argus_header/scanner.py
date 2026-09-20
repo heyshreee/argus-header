@@ -15,7 +15,7 @@ from __future__ import annotations
 import time
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
 from argus_header.engine.rules import run_rules
 from argus_header.engine.scoring import calculate_score_2
@@ -30,6 +30,7 @@ def scan_target(
     follow_redirects: bool = True,
     timeout: int = 10,
     config: Configuration | None = None,
+    request_validator: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     """Perform a full v0.8 scan of a target URL.
 
@@ -45,6 +46,9 @@ def scan_target(
         )
 
     start = time.perf_counter()
+    if request_validator is not None:
+        request_validator(target)
+
     response_data = fetch_headers(
         target,
         method=method,
@@ -85,7 +89,10 @@ def scan_target(
         }
 
     headers = response_data.get("headers", {})
-    findings = run_rules(headers, config=config)
+    analysis_headers = dict(headers)
+    if response_data.get("set_cookie_headers"):
+        analysis_headers["set-cookie"] = response_data["set_cookie_headers"]
+    findings = run_rules(analysis_headers, config=config)
     score = calculate_score_2(findings)
 
     report = build_report(

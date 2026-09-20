@@ -65,6 +65,15 @@ def test_multiple_cookies_analyzed_independently():
     assert {"a", "b"} <= names
 
 
+def test_cookie_list_is_analyzed_independently():
+    findings = analyze_cookies(
+        {"set-cookie": ["a=1; Secure; HttpOnly", "b=2; Secure; HttpOnly"]}
+    )
+
+    names = {f.get("issue", "").split("'")[1] for f in findings}
+    assert {"a", "b"} <= names
+
+
 def test_strict_policy_accepted():
     headers = {
         "Set-Cookie": "sid=xyz; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600"

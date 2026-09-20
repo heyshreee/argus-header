@@ -8,7 +8,7 @@ for security-relevant weaknesses.
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from argus_header.engine.findings import make_finding
 from argus_header.engine.references import references_for
@@ -52,9 +52,16 @@ def analyze_cookies(headers: Mapping[str, str]) -> list[dict]:
     """Analyze all Set-Cookie headers and return finding dicts."""
     findings: list[dict] = []
 
-    cookie_headers = [(k, v) for k, v in headers.items() if k.lower() == "set-cookie"]
+    cookie_headers: list[str] = []
+    for key, value in headers.items():
+        if key.lower() != "set-cookie":
+            continue
+        if isinstance(value, Sequence) and not isinstance(value, str):
+            cookie_headers.extend(str(cookie) for cookie in value)
+        else:
+            cookie_headers.append(str(value))
 
-    for key, value in cookie_headers:
+    for value in cookie_headers:
         name, attrs = _parse_cookie_header(value)
         findings.extend(_analyze_single(name, attrs, value))
 

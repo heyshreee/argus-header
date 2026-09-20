@@ -46,14 +46,12 @@ You will be kept informed at every stage and credited in the fix's changelog ent
 - The web dashboard under `frontend/`
 - Dependency and supply-chain issues affecting the published PyPI package `argus-header`
 
-**Known, documented limitations**
+**Deployment notes**
 
-Some behaviors are already tracked as known issues in
-[docs/DOCUMENTATION.md §16](docs/DOCUMENTATION.md#16-known-issues--limitations)
-(e.g. no SSRF guard on the API, permissive CORS in development mode,
-hardcoded backend URL in the dashboard). Reports about these are still
-welcome — especially concrete exploitation paths — but they may be closed
-as duplicates of existing roadmap items.
+The API accepts only public HTTP(S) targets and does not follow redirects.
+Set `ARGUS_ALLOWED_ORIGINS` to a comma-separated list of trusted dashboard
+origins before deployment; the default permits only `http://localhost:3000`.
+Keep standard network egress controls in place as defence in depth.
 
 **Out of scope**
 

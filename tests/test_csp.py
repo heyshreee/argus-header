@@ -61,12 +61,12 @@ def test_strict_csp_produces_no_warnings():
     )
 
 
-def test_report_only_policy_is_considered():
+def test_report_only_policy_does_not_count_as_an_enforcing_csp():
     findings = analyze_csp(
         {"content-security-policy-report-only": "default-src 'self'"}
     )
 
-    assert findings  # a weak report-only policy still gets analysed
+    assert any(f["id"] == "ARGUS-CSP-001" for f in findings)
 
 
 def test_evidence_included_in_findings():

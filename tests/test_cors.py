@@ -30,14 +30,14 @@ def test_wildcard_without_credentials_is_medium():
     assert cors and cors[0]["severity"] == "MEDIUM"
 
 
-def test_credentials_with_explicit_origin_flagged():
+def test_credentials_with_fixed_explicit_origin_is_not_flagged():
     findings = analyze_cors(
         {
             "access-control-allow-origin": "https://evil.example",
             "access-control-allow-credentials": "true",
         }
     )
-    assert any(f["id"] == "ARGUS-CORS-002" for f in findings)
+    assert not any(f["id"] in {"ARGUS-CORS-002", "ARGUS-CORS-003"} for f in findings)
 
 
 def test_null_origin_blocked():

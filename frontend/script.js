@@ -46,7 +46,9 @@ analysisForm.addEventListener('submit', async (e) => {
     setLoading(true);
 
     try {
-        const response = await fetch(`http://127.0.0.1:8000/analyze?url=${encodeURIComponent(url)}`);
+        const apiUrl = new URL(window.ARGUS_API_URL || '/analyze', window.location.origin);
+        apiUrl.searchParams.set('url', url);
+        const response = await fetch(apiUrl);
         if (!response.ok) {
             const errData = await response.json();
             showError(errData.detail || "Something went wrong");
